@@ -256,6 +256,25 @@ describe('validation overrides', () => {
   });
 });
 
+describe('store() returns a refreshed model', () => {
+  // Bug-fix regression: without refresh(), DB defaults (like view_count default 0)
+  // come back as null in the create response because Eloquent's create() doesn't
+  // re-fetch the row from the DB.
+  it('emits ->refresh() after Model::create() in the store action', async () => {
+    const { renderControllerBase } = await import('../../src/generate/controller-base.js');
+    const output = await renderControllerBase({
+      udoVersion: 1,
+      resource: 'Post',
+      fields: {
+        title: { type: 'string', required: true },
+        view_count: { type: 'unsignedInteger', default: 0 },
+      },
+    });
+    // The create line must be followed by ->refresh()
+    expect(output).toMatch(/Post::create\(\$request->validated\(\)\);\s*\n\s*\$record->refresh\(\);/);
+  });
+});
+
 describe('controller knobs', () => {
   it('respects custom pageSize', async () => {
     const doc: UdoDocument = {

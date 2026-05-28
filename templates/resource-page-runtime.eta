@@ -7,6 +7,7 @@
 // react-hook-form via `zodResolver`. `resource.endpoint` and `resource.queryKey`
 // drop straight into axios/fetch + TanStack Query.
 
+import * as React from 'react';
 import { useQuery } from '@tanstack/react-query';
 
 interface UdoFieldMeta {

@@ -1,6 +1,7 @@
 // Scaffold-once: udo-gen wrote this file once and will not overwrite it.
 // Edit freely. The typed metadata lives in `@/udo/<%= it.resource %>`.
 
+import * as React from 'react';
 import { <%= it.resource %> } from '@/udo';
 import { ResourcePage } from '@/lib/udo-ui/resource-page';
 

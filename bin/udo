@@ -1,0 +1,13 @@
+#!/usr/bin/env node
+import('../dist/cli.js').catch(async () => {
+  // Dev fallback: run TS directly if dist isn't built yet.
+  const { spawnSync } = await import('node:child_process');
+  const path = await import('node:path');
+  const url = await import('node:url');
+  const here = path.dirname(url.fileURLToPath(import.meta.url));
+  const entry = path.resolve(here, '..', 'src', 'cli.ts');
+  const result = spawnSync('npx', ['tsx', entry, ...process.argv.slice(2)], {
+    stdio: 'inherit',
+  });
+  process.exit(result.status ?? 1);
+});

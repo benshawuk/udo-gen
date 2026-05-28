@@ -1,0 +1,22 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Http\Controllers;
+
+use App\Http\Controllers\Generated\<%= it.resource %>ControllerBase;
+
+/**
+ * <%= it.resource %>Controller.
+ *
+ * Scaffold-once: this file is yours forever. udo-gen will never overwrite
+ * it on subsequent runs. Auto-generated CRUD lives in the
+ * Generated\<%= it.resource %>ControllerBase class.
+ *
+ * Override base methods or add custom endpoints here. Add additional routes
+ * by hand in routes/api.php — the generator only injects the apiResource line.
+ */
+class <%= it.resource %>Controller extends <%= it.resource %>ControllerBase
+{
+    //
+}

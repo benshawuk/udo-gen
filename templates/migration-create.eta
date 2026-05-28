@@ -1,0 +1,36 @@
+<?php
+
+declare(strict_types=1);
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+/**
+ * Auto-generated from udo/<%= it.resource %>.udo.json by udo-gen.
+ *
+ * This is the initial create migration. Subsequent UDO changes should be
+ * emitted as separate ALTER migrations via `udo migrate <%= it.resource %>`.
+ */
+return new class extends Migration
+{
+    public function up(): void
+    {
+        Schema::create('<%= it.table %>', function (Blueprint $table) {
+<% it.columns.forEach(function (line) { %>            <%= line %>
+<% }) %><% if (it.softDeletes) { %>            $table->softDeletes();
+<% } %><% if (it.timestamps) { %>            $table->timestamps();
+<% } %><% if (it.compositeIndexes.length > 0) { %>
+<% it.compositeIndexes.forEach(function (i) {
+       var method = i.unique ? 'unique' : 'index';
+       var cols = i.columns.map(function (c) { return "'" + c + "'"; }).join(', ');
+       var nameArg = i.name ? ", '" + i.name + "'" : '';
+%>            $table-><%= method %>([<%= cols %>]<%= nameArg %>);
+<% }) %><% } %>        });
+    }
+
+    public function down(): void
+    {
+        Schema::dropIfExists('<%= it.table %>');
+    }
+};

@@ -1,0 +1,8 @@
+{
+  "$schema": "../../schema/udo-v1.schema.json",
+  "udoVersion": 1,
+  "resource": "Widget",
+  "fields": {
+    "name": { "type": "string", "required": true, "max": 255 }
+  }
+}

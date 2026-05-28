@@ -1,0 +1,30 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Database\Factories;
+
+use App\Models\<%= it.resource %>;
+use Illuminate\Database\Eloquent\Factories\Factory;
+
+/**
+ * @extends Factory<<%= it.resource %>>
+ *
+ * Auto-generated from udo/<%= it.resource %>.udo.json by udo-gen.
+ * Override defaults at the call site (e.g. ::factory()->state(['code' => '1234'])).
+ */
+class <%= it.resource %>Factory extends Factory
+{
+    /** @var class-string<\Illuminate\Database\Eloquent\Model> */
+    protected $model = <%= it.resource %>::class;
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function definition(): array
+    {
+        return [
+<% it.rows.forEach(function (r) { %>            '<%= r.name %>' => <%= r.expression %>,
+<% }) %>        ];
+    }
+}

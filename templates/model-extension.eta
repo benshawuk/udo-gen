@@ -1,0 +1,23 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Models;
+
+use App\Models\Generated\<%= it.resource %>Base;
+
+/**
+ * <%= it.resource %> model.
+ *
+ * Scaffold-once: this file is yours forever. udo-gen will never overwrite
+ * it on subsequent runs. To change auto-derived state ($fillable, $casts,
+ * $table, soft-deletes, timestamps), edit udo/<%= it.resource %>.udo.json.
+ *
+ * Add scopes, accessors, mutators, relationship method bodies, and any
+ * other application code here. Override base-class relationship methods
+ * by redeclaring them with the same name.
+ */
+class <%= it.resource %> extends <%= it.resource %>Base
+{
+    //
+}

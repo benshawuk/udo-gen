@@ -1,0 +1,110 @@
+// Scaffold-once: this runtime helper is installed once per project by udo-gen.
+// It is intentionally minimal — a read-only viewer that proves the UDO module's
+// typed metadata (endpoint, queryKey, fields) wires up correctly.
+//
+// Replace with your own implementation when you're ready to build real CRUD.
+// `resource.createSchema` / `resource.updateSchema` are Zod schemas ready for
+// react-hook-form via `zodResolver`. `resource.endpoint` and `resource.queryKey`
+// drop straight into axios/fetch + TanStack Query.
+
+import { useQuery } from '@tanstack/react-query';
+
+interface UdoFieldMeta {
+  readonly type: string;
+  readonly format?: string;
+  readonly required?: boolean;
+  readonly nullable?: boolean;
+  readonly max?: number;
+  readonly min?: number;
+  readonly length?: number;
+  readonly values?: readonly (string | number)[];
+}
+
+export interface UdoResourceModule {
+  readonly endpoint: string;
+  readonly queryKey: readonly string[];
+  readonly labelKey: string;
+  readonly fields: Readonly<Record<string, UdoFieldMeta>>;
+}
+
+interface ResourcePageProps<U extends UdoResourceModule> {
+  resource: U;
+}
+
+export function ResourcePage<U extends UdoResourceModule>({
+  resource,
+}: ResourcePageProps<U>) {
+  const { data, isLoading, isError, error } = useQuery({
+    queryKey: [...resource.queryKey],
+    queryFn: async (): Promise<Record<string, unknown>[]> => {
+      const res = await fetch(resource.endpoint, { credentials: 'include' });
+      if (!res.ok) throw new Error(`Fetch failed: ${res.status}`);
+      const json = (await res.json()) as unknown;
+      if (Array.isArray(json)) return json as Record<string, unknown>[];
+      if (json && typeof json === 'object' && 'data' in json && Array.isArray((json as { data: unknown }).data)) {
+        return (json as { data: Record<string, unknown>[] }).data;
+      }
+      return [];
+    },
+  });
+
+  const fieldNames = Object.keys(resource.fields);
+  const rows = data ?? [];
+
+  return (
+    <div className="p-6 space-y-4">
+      <div className="flex items-baseline justify-between">
+        <h2 className="text-xl font-semibold">{resource.labelKey}</h2>
+        <span className="text-sm text-gray-500">
+          {isLoading ? 'Loading…' : `${rows.length} row(s)`}
+        </span>
+      </div>
+
+      {isError ? (
+        <div className="rounded border border-red-300 bg-red-50 p-3 text-sm text-red-700">
+          {error instanceof Error ? error.message : 'Unknown error'}
+        </div>
+      ) : null}
+
+      <div className="overflow-x-auto">
+        <table className="min-w-full text-sm">
+          <thead className="bg-gray-50 text-left">
+            <tr>
+              <th className="px-3 py-2 font-medium">id</th>
+              {fieldNames.map((f) => (
+                <th key={f} className="px-3 py-2 font-medium">
+                  {f}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-100">
+            {rows.length === 0 && !isLoading ? (
+              <tr>
+                <td colSpan={fieldNames.length + 1} className="px-3 py-6 text-center text-gray-500">
+                  No records.
+                </td>
+              </tr>
+            ) : null}
+            {rows.map((row, i) => (
+              <tr key={String(row['id'] ?? i)}>
+                <td className="px-3 py-2 font-mono text-xs">{String(row['id'] ?? '')}</td>
+                {fieldNames.map((f) => (
+                  <td key={f} className="px-3 py-2 truncate" title={String(row[f] ?? '')}>
+                    {formatCell(row[f])}
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+function formatCell(value: unknown): string {
+  if (value === null || value === undefined) return '—';
+  if (typeof value === 'object') return JSON.stringify(value);
+  return String(value);
+}

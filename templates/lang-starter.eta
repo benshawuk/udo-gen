@@ -1,0 +1,31 @@
+<?php
+
+declare(strict_types=1);
+
+/**
+ * Translation starter for <%= it.resource %>.
+ *
+ * Scaffold-once: this file is yours. udo-gen will never overwrite it after
+ * the first generation. When you add new fields to the UDO, add their keys
+ * here manually (or run `udo lang-check` to see what's missing — coming soon).
+ */
+return [
+    'name' => '<%= it.resourceLabel %>',
+    'name_plural' => '<%= it.resourcePluralLabel %>',
+
+    'fields' => [
+<% it.fields.forEach(function (f) { %>        '<%= f.key %>' => '<%= f.label %>',
+<% }) %>    ],
+
+    'fields_help' => [
+<% it.fields.forEach(function (f) { %>        '<%= f.key %>' => '',
+<% }) %>    ],
+
+    'fields_placeholder' => [
+<% it.fields.forEach(function (f) { %>        '<%= f.key %>' => '',
+<% }) %>    ],
+<% it.enums.forEach(function (e) { %>
+    '<%= e.field %>_values' => [
+<% e.values.forEach(function (v) { %>        '<%= v.key %>' => '<%= v.label %>',
+<% }) %>    ],
+<% }) %>];

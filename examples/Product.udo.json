@@ -1,0 +1,90 @@
+{
+  // Stress example: exercises every major UDO feature -
+  // primitive + format, FK with constrained onDelete, enum,
+  // soft deletes, declared relationships (hasMany, belongsToMany),
+  // composite index, controller knobs.
+  "$schema": "../schema/udo-v1.schema.json",
+  "udoVersion": 1,
+
+  "resource": "Product",
+  "table": "products",
+  "timestamps": true,
+  "softDeletes": true,
+  "factory": "auto",
+  "controller": {
+    "mode": "auto",
+    "eagerLoad": ["category"],
+    "defaultSort": "-created_at",
+    "pageSize": 50
+  },
+  "transformer": "auto",
+
+  "fields": {
+    "title": {
+      "type": "string",
+      "required": true,
+      "max": 255
+    },
+    "slug": {
+      "type": "string",
+      "required": true,
+      "format": "slug",
+      "max": 255,
+      "unique": true,
+      "validation": {
+        "backend": ["unique:products,slug"]
+      }
+    },
+    "description": {
+      "type": "text",
+      "format": "richText",
+      "nullable": true
+    },
+    "price": {
+      "type": "decimal",
+      "format": "currency",
+      "required": true,
+      "precision": 10,
+      "scale": 2,
+      "min": 0
+    },
+    "status": {
+      "type": "string",
+      "required": true,
+      "values": ["draft", "published", "archived"],
+      "default": "draft"
+    },
+    "category_id": {
+      "type": "foreignId",
+      "required": true,
+      "references": "categories.id",
+      "onDelete": "cascade",
+      "displayField": "name"
+    },
+    "stock_count": {
+      "type": "unsignedInteger",
+      "default": 0
+    },
+    "published_at": {
+      "type": "dateTime",
+      "nullable": true,
+      "index": true
+    }
+  },
+
+  "relationships": {
+    "tags": {
+      "type": "belongsToMany",
+      "model": "Tag",
+      "pivot": "product_tag"
+    },
+    "reviews": {
+      "type": "hasMany",
+      "model": "Review"
+    }
+  },
+
+  "indexes": [
+    { "columns": ["status", "published_at"] }
+  ]
+}

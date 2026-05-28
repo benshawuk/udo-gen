@@ -1,0 +1,34 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Http\Requests;
+
+use Illuminate\Foundation\Http\FormRequest;
+
+/**
+ * Auto-generated from udo/<%= it.resource %>.udo.json by udo-gen.
+ *
+ * DO NOT EDIT. To add cross-field rules, async checks, or custom messages,
+ * add them via the UDO's `validation.backend` array, or use a Request
+ * subclass in your controller for one-off variations.
+ */
+class <%= it.resource %>Request extends FormRequest
+{
+    public function authorize(): bool
+    {
+        return true;
+    }
+
+    /**
+     * @return array<string, array<int, string>>
+     */
+    public function rules(): array
+    {
+        $isUpdate = in_array($this->method(), ['PUT', 'PATCH'], true);
+
+        return [
+<% it.rows.forEach(function (r) { %>            '<%= r.field %>' => <%= r.expression %>,
+<% }) %>        ];
+    }
+}

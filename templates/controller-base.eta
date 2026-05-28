@@ -1,0 +1,64 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Http\Controllers\Generated;
+
+use App\Http\Controllers\Controller;
+use App\Http\Requests\<%= it.resource %>Request;
+use App\Http\Resources\<%= it.resource %>Resource;
+use App\Models\<%= it.resource %>;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+
+/**
+ * DO NOT EDIT.
+ *
+ * Auto-generated from udo/<%= it.resource %>.udo.json by udo-gen.
+ * Edits will be overwritten on the next `pnpm udo gen`.
+ *
+ * To add custom endpoints or change CRUD behavior, edit
+ * App\Http\Controllers\<%= it.resource %>Controller (the extension class
+ * that extends this one).
+ */
+abstract class <%= it.resource %>ControllerBase extends Controller
+{
+    public function index(): AnonymousResourceCollection
+    {
+        $query = <%= it.resource %>::query();
+<% if (it.eagerLoad.length > 0) { %>        $query->with([<%= it.eagerLoad.map(function (r) { return "'" + r + "'"; }).join(', ') %>]);
+<% } %><% if (it.defaultSortColumn) { %>        $query->orderBy('<%= it.defaultSortColumn %>', '<%= it.defaultSortDirection %>');
+<% } %>
+        return <%= it.resource %>Resource::collection($query->paginate(<%= it.pageSize %>));
+    }
+
+    public function store(<%= it.resource %>Request $request): JsonResponse
+    {
+        $record = <%= it.resource %>::create($request->validated());
+        $record->refresh();
+
+        return (new <%= it.resource %>Resource($record))
+            ->response()
+            ->setStatusCode(201);
+    }
+
+    public function show(<%= it.resource %> $<%= it.modelVar %>): <%= it.resource %>Resource
+    {
+<% if (it.eagerLoad.length > 0) { %>        $<%= it.modelVar %>->load([<%= it.eagerLoad.map(function (r) { return "'" + r + "'"; }).join(', ') %>]);
+<% } %>        return new <%= it.resource %>Resource($<%= it.modelVar %>);
+    }
+
+    public function update(<%= it.resource %>Request $request, <%= it.resource %> $<%= it.modelVar %>): <%= it.resource %>Resource
+    {
+        $<%= it.modelVar %>->update($request->validated());
+
+        return new <%= it.resource %>Resource($<%= it.modelVar %>->fresh());
+    }
+
+    public function destroy(<%= it.resource %> $<%= it.modelVar %>): JsonResponse
+    {
+        $<%= it.modelVar %>->delete();
+
+        return response()->json(['message' => '<%= it.resource %> deleted.']);
+    }
+}

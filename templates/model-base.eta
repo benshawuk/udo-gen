@@ -1,0 +1,56 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Models\Generated;
+
+use Illuminate\Database\Eloquent\Model;
+<% if (it.hasFactory) { %>use Illuminate\Database\Eloquent\Factories\HasFactory;
+<% } %><% if (it.softDeletes) { %>use Illuminate\Database\Eloquent\SoftDeletes;
+<% } %><% it.uniqueRelationImports.forEach(function (r) { %>use Illuminate\Database\Eloquent\Relations\<%= r %>;
+<% }) %>
+/**
+ * DO NOT EDIT.
+ *
+ * Auto-generated from udo/<%= it.resource %>.udo.json by udo-gen.
+ * Edits will be overwritten on the next `pnpm udo gen`.
+ *
+ * To add scopes, accessors, mutators, or override the relationship methods
+ * below with custom logic (scopes, ordering, custom keys), edit
+ * App\Models\<%= it.resource %> — that file is yours forever.
+ */
+abstract class <%= it.resource %>Base extends Model
+{
+<% if (it.hasFactory) { %>    /** @use HasFactory<\Database\Factories\<%= it.resource %>Factory> */
+    use HasFactory;
+<% } %><% if (it.softDeletes) { %>    use SoftDeletes;
+<% } %><% if (it.hasFactory || it.softDeletes) { %>
+<% } %>    /**
+     * @var string
+     */
+    protected $table = '<%= it.table %>';
+
+    /**
+     * @var bool
+     */
+    public $timestamps = <%= it.timestamps ? 'true' : 'false' %>;
+
+    /**
+     * @var list<string>
+     */
+    protected $fillable = [
+<% it.fillable.forEach(function (f) { %>        '<%= f %>',
+<% }) %>    ];
+
+<% if (it.casts.length > 0) { %>    /**
+     * @var array<string, string>
+     */
+    protected $casts = [
+<% it.casts.forEach(function (c) { %>        '<%= c.field %>' => '<%= c.cast %>',
+<% }) %>    ];
+<% } %><% it.relations.forEach(function (r) { %>
+    public function <%= r.name %>(): <%= r.returnType %>
+    {
+        <%= r.body %>
+    }
+<% }) %>}

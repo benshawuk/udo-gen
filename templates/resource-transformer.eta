@@ -1,0 +1,32 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Http\Resources;
+
+use Illuminate\Http\Request;
+use Illuminate\Http\Resources\Json\JsonResource;
+
+/**
+ * Auto-generated from udo/<%= it.resource %>.udo.json by udo-gen.
+ *
+ * DO NOT EDIT. Set `transformer: "custom"` in the UDO if you need to write
+ * your own.
+ */
+class <%= it.resource %>Resource extends JsonResource
+{
+    /**
+     * @return array<string, mixed>
+     */
+    public function toArray(Request $request): array
+    {
+        return [
+            'id' => $this->id,
+<% it.fieldKeys.forEach(function (k) { %>            '<%= k %>' => $this-><%= k %>,
+<% }) %><% if (it.timestamps) { %>            'created_at' => $this->created_at?->toISOString(),
+            'updated_at' => $this->updated_at?->toISOString(),
+<% } %><% if (it.relations.length > 0) { %>
+<% it.relations.forEach(function (r) { %>            '<%= r.key %>' => <%= r.expression %>,
+<% }) %><% } %>        ];
+    }
+}

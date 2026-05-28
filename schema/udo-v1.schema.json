@@ -1,0 +1,353 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://udo-gen.dev/schema/udo-v1.schema.json",
+  "title": "Unified Data Object v1",
+  "description": "Schema for a single resource's UDO file. Declares facts (fields, validation, relationships, UI hints) that drive code generation. Never describes logic.",
+  "type": "object",
+  "required": ["udoVersion", "resource", "fields"],
+  "additionalProperties": false,
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "description": "Reference to this schema. Enables editor autocomplete and validation."
+    },
+    "udoVersion": {
+      "const": 1,
+      "description": "UDO schema version. Required so generators can branch on schema evolution."
+    },
+    "resource": {
+      "type": "string",
+      "pattern": "^[A-Z][A-Za-z0-9]*$",
+      "description": "PascalCase resource name. e.g. 'Product', 'VerificationCode'. Drives class names, file names, and translation keys."
+    },
+    "table": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*$",
+      "description": "DB table name. If omitted, defaults to snake_case_plural of the resource."
+    },
+    "softDeletes": {
+      "type": "boolean",
+      "default": false,
+      "description": "Adds Laravel SoftDeletes trait + deleted_at column."
+    },
+    "timestamps": {
+      "type": "boolean",
+      "default": true,
+      "description": "Adds created_at and updated_at columns. Default true."
+    },
+    "indexes": {
+      "type": "array",
+      "description": "Composite indexes. Single-column indexes come from field-level `unique: true` (unique) or `index: true` (non-unique).",
+      "items": {
+        "type": "object",
+        "required": ["columns"],
+        "additionalProperties": false,
+        "properties": {
+          "columns": {
+            "type": "array",
+            "minItems": 2,
+            "items": { "type": "string" }
+          },
+          "unique": { "type": "boolean", "default": false },
+          "name": { "type": "string", "description": "Custom index name; auto-derived if omitted." }
+        }
+      }
+    },
+    "controller": {
+      "description": "How the controller is generated. Default 'auto' produces a stock RESTful controller.",
+      "oneOf": [
+        { "const": "auto" },
+        { "const": "custom" },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "mode": { "const": "auto" },
+            "eagerLoad": { "type": "array", "items": { "type": "string" } },
+            "scopes": { "type": "array", "items": { "type": "string" } },
+            "defaultSort": { "type": "string" },
+            "search": { "type": "array", "items": { "type": "string" } },
+            "pageSize": { "type": "integer", "minimum": 1, "maximum": 200 }
+          },
+          "required": ["mode"]
+        }
+      ],
+      "default": "auto"
+    },
+    "transformer": {
+      "description": "How the API Resource transformer is generated.",
+      "enum": ["auto", "custom"],
+      "default": "auto"
+    },
+    "factory": {
+      "description": "Whether to emit a Laravel factory.",
+      "oneOf": [
+        { "const": "auto" },
+        { "const": false }
+      ],
+      "default": "auto"
+    },
+    "nav": {
+      "type": "object",
+      "description": "Optional sidebar entry. If omitted, the resource isn't auto-added to nav.",
+      "additionalProperties": false,
+      "properties": {
+        "section": { "type": "string", "description": "Sidebar section name (translation key)." },
+        "icon": { "type": "string", "description": "Lucide icon name." },
+        "order": { "type": "integer", "default": 100 }
+      }
+    },
+    "fields": {
+      "type": "object",
+      "minProperties": 1,
+      "description": "Map of field name (snake_case) to field declaration.",
+      "patternProperties": {
+        "^[a-z][a-z0-9_]*$": { "$ref": "#/$defs/field" }
+      },
+      "additionalProperties": false
+    },
+    "relationships": {
+      "type": "object",
+      "description": "Non-belongsTo relationships. belongsTo is inferred from foreignId fields.",
+      "patternProperties": {
+        "^[a-z][a-zA-Z0-9_]*$": { "$ref": "#/$defs/relationship" }
+      },
+      "additionalProperties": false
+    },
+    "views": {
+      "type": "object",
+      "description": "Optional UI structure for form/table/card views. All optional with sensible defaults.",
+      "additionalProperties": false,
+      "properties": {
+        "form": { "$ref": "#/$defs/formView" },
+        "table": { "$ref": "#/$defs/tableView" },
+        "card": { "$ref": "#/$defs/cardView" }
+      }
+    }
+  },
+
+  "$defs": {
+    "primitiveType": {
+      "enum": [
+        "string",
+        "text",
+        "longText",
+        "mediumText",
+        "integer",
+        "bigInteger",
+        "tinyInteger",
+        "unsignedInteger",
+        "unsignedTinyInteger",
+        "decimal",
+        "float",
+        "double",
+        "boolean",
+        "date",
+        "dateTime",
+        "timestamp",
+        "time",
+        "json",
+        "uuid",
+        "foreignId",
+        "binary"
+      ]
+    },
+    "semanticFormat": {
+      "type": "string",
+      "description": "Semantic flavor of the primitive type. Drives default UI widget and validation hints. Not all formats apply to all primitives.",
+      "examples": [
+        "email", "url", "slug", "password", "phone",
+        "currency", "percent",
+        "richText", "markdown",
+        "color", "ipAddress",
+        "uuid"
+      ]
+    },
+
+    "field": {
+      "type": "object",
+      "required": ["type"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "$ref": "#/$defs/primitiveType" },
+        "format": { "$ref": "#/$defs/semanticFormat" },
+        "required": { "type": "boolean", "default": false },
+        "nullable": { "type": "boolean", "default": false },
+        "unique": { "type": "boolean", "default": false },
+        "index": { "type": "boolean", "default": false, "description": "Add a single-column non-unique index on this field." },
+        "default": {
+          "description": "Default value. Type depends on field type. Use null for explicit nullable default.",
+          "type": ["string", "number", "boolean", "null"]
+        },
+        "max": { "type": "number", "description": "For strings: max length. For numbers: max value." },
+        "min": { "type": "number", "description": "For strings: min length. For numbers: min value." },
+        "length": { "type": "integer", "description": "Exact length (e.g. for char(N) or string(N))." },
+        "precision": { "type": "integer", "description": "decimal/numeric precision." },
+        "scale": { "type": "integer", "description": "decimal/numeric scale." },
+        "values": {
+          "type": "array",
+          "description": "For enum fields: allowed values.",
+          "items": { "type": ["string", "number"] }
+        },
+        "references": {
+          "type": "string",
+          "description": "For foreignId: 'table.column' the FK points at. Implies belongsTo relationship.",
+          "pattern": "^[a-z][a-z0-9_]*\\.[a-z][a-z0-9_]*$"
+        },
+        "onDelete": {
+          "enum": ["cascade", "restrict", "set null", "no action"],
+          "description": "FK onDelete behavior. Only applies to foreignId."
+        },
+        "displayField": {
+          "type": "string",
+          "description": "For foreignId: the related row's field shown in pickers and option labels. e.g. 'name'."
+        },
+        "label": {
+          "type": "string",
+          "description": "Translation key override. If omitted, convention is '{resource}.fields.{field_name}'."
+        },
+        "validation": {
+          "type": "object",
+          "description": "Escape hatches for FE/BE validation divergence. Use only when semantic facets aren't enough.",
+          "additionalProperties": false,
+          "properties": {
+            "backend": {
+              "type": "array",
+              "items": { "type": "string" },
+              "description": "Extra Laravel validation rules appended to the backend rules array (e.g. ['unique:users,email','exists:categories,id'])."
+            },
+            "frontend": {
+              "type": "array",
+              "items": { "type": "string" },
+              "description": "Extra frontend-only rules appended to the FE rules."
+            },
+            "skip": {
+              "type": "object",
+              "description": "Remove a shared semantic rule on one side. e.g. { frontend: ['max'] } drops the max-length check on the FE.",
+              "additionalProperties": false,
+              "properties": {
+                "backend": { "type": "array", "items": { "type": "string" } },
+                "frontend": { "type": "array", "items": { "type": "string" } }
+              }
+            }
+          }
+        },
+        "ui": {
+          "type": "object",
+          "description": "Per-field UI hints. All optional; widget defaults are inferred from type+format.",
+          "additionalProperties": false,
+          "properties": {
+            "widget": {
+              "type": "string",
+              "description": "Override the default widget. e.g. 'textarea' for a string field."
+            },
+            "help": { "type": "string", "description": "Translation key for help text." },
+            "placeholder": { "type": "string", "description": "Translation key for placeholder text." },
+            "format": { "type": "string", "description": "Display format hint (e.g. 'currency:USD')." }
+          }
+        }
+      }
+    },
+
+    "relationship": {
+      "type": "object",
+      "required": ["type", "model"],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "enum": ["hasOne", "hasMany", "belongsToMany", "morphTo", "morphMany"],
+          "description": "Cardinality. belongsTo is NOT here — declare via foreignId field instead."
+        },
+        "model": {
+          "type": "string",
+          "pattern": "^[A-Z][A-Za-z0-9]*$",
+          "description": "Target resource's PascalCase name."
+        },
+        "foreignKey": {
+          "type": "string",
+          "description": "FK column name override. Defaults to Laravel convention."
+        },
+        "localKey": {
+          "type": "string",
+          "description": "Local key override. Defaults to 'id'."
+        },
+        "pivot": {
+          "type": "string",
+          "description": "For belongsToMany: pivot table name."
+        },
+        "morphName": {
+          "type": "string",
+          "description": "For morphMany/morphTo: the morph name (e.g. 'commentable')."
+        }
+      }
+    },
+
+    "formView": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "fields": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Field names in the order they appear in the form. Omitted fields are excluded."
+        },
+        "layout": {
+          "enum": ["single-column", "two-column"],
+          "default": "single-column"
+        }
+      }
+    },
+
+    "tableView": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "columns": {
+          "type": "array",
+          "items": {
+            "oneOf": [
+              { "type": "string", "description": "Shorthand: just a field name (or dotted path like 'category.name')." },
+              {
+                "type": "object",
+                "required": ["field"],
+                "additionalProperties": false,
+                "properties": {
+                  "field": { "type": "string" },
+                  "label": { "type": "string", "description": "Translation key override." },
+                  "sortable": { "type": "boolean", "default": false },
+                  "align": { "enum": ["left", "center", "right"], "default": "left" },
+                  "badge": { "type": "boolean", "default": false },
+                  "format": { "type": "string" }
+                }
+              }
+            ]
+          }
+        },
+        "search": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Fields included in full-text search."
+        },
+        "defaultSort": {
+          "type": "string",
+          "description": "Default sort. Prefix '-' for descending. e.g. '-created_at'."
+        },
+        "pageSize": { "type": "integer", "minimum": 1, "maximum": 200, "default": 25 }
+      }
+    },
+
+    "cardView": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "title": { "type": "string", "description": "Field shown as card title." },
+        "subtitle": { "type": "string", "description": "Field shown as card subtitle. Supports dotted paths." },
+        "body": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Fields shown in the card body."
+        }
+      }
+    }
+  }
+}

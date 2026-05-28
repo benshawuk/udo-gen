@@ -1,0 +1,40 @@
+// AUTO-GENERATED from udo/<%= it.resource %>.udo.json by udo-gen.
+// DO NOT EDIT. Regenerate with `pnpm udo gen <%= it.resource %>`.
+
+import { z } from 'zod';
+
+/** Per-field metadata for use by runtime helpers. */
+export const fields = {
+<% it.fieldsMetadata.forEach(function (f) { %>  <%= f.name %>: <%= f.meta %>,
+<% }) %>} as const;
+
+/** Zod schema for create (POST). */
+export const createSchema = z.object({
+<% it.fields.forEach(function (f) { %>  <%= f.name %>: <%= f.zod %>,
+<% }) %>});
+
+/** Zod schema for update (PATCH/PUT). All fields optional. */
+export const updateSchema = createSchema.partial();
+
+/** Type derived from createSchema. Use as the input type for new records. */
+export type Create = z.infer<typeof createSchema>;
+
+/** Type derived from updateSchema. */
+export type Update = z.infer<typeof updateSchema>;
+
+/** Full record shape returned by the API. */
+export type Shape = {
+  id: number;
+<% it.fields.forEach(function (f) { %>  <%= f.name %>: <%= f.shapeType %>;
+<% }) %><% if (it.timestamps) { %>  created_at: string;
+  updated_at: string;
+<% } %>};
+
+/** API endpoint for this resource. */
+export const endpoint = '<%= it.endpoint %>' as const;
+
+/** TanStack Query key prefix. */
+export const queryKey = ['<%= it.queryKey %>'] as const;
+
+/** Translation key namespace, e.g. labelKey + '.fields.title'. */
+export const labelKey = '<%= it.labelKey %>' as const;

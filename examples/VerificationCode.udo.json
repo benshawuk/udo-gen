@@ -1,0 +1,59 @@
+{
+  // Worked example: translation of database/migrations/..._create_verification_codes_table.php
+  // from the laravel/api project. Stress-tests the v1 schema on a real (non-trivial) resource.
+  "$schema": "../schema/udo-v1.schema.json",
+  "udoVersion": 1,
+
+  "resource": "VerificationCode",
+  "table": "verification_codes",
+  "timestamps": true,
+  "softDeletes": false,
+
+  // CRUD controller wouldn't normally apply to verification codes — they're created by an
+  // auth flow, not by the user. Marking controller/transformer as custom so the generator
+  // doesn't scaffold them. We still want the Model base, Migration, and TS types.
+  "controller": "custom",
+  "transformer": "custom",
+  "factory": "auto",
+
+  "fields": {
+    "identifier": {
+      "type": "string",
+      "required": true,
+      "max": 255
+      // Email or phone number. No format constraint here because both are accepted —
+      // upstream auth flow chooses which.
+    },
+
+    "code": {
+      "type": "string",
+      "required": true,
+      "length": 4
+      // 4-digit code stored as plain text (short expiry). length implies fixed-width.
+    },
+
+    "expires_at": {
+      "type": "timestamp",
+      "required": true,
+      "index": true
+      // Indexed for the cleanup job that prunes expired codes.
+    },
+
+    "verified_at": {
+      "type": "timestamp",
+      "nullable": true
+    },
+
+    "ip_address": {
+      "type": "string",
+      "format": "ipAddress",
+      "nullable": true,
+      "length": 45
+      // 45 = max IPv6 length.
+    }
+  },
+
+  "indexes": [
+    { "columns": ["identifier", "code", "expires_at"] }
+  ]
+}

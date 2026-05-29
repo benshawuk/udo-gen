@@ -3,6 +3,23 @@
   "version": "0.0.1",
   "description": "Schema-first code generator for Laravel + React. One UDO file replaces N hand-maintained artifacts.",
   "type": "module",
+  "license": "MIT",
+  "author": "Ben Shaw",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/benshawuk/udo-gen.git"
+  },
+  "homepage": "https://github.com/benshawuk/udo-gen#readme",
+  "bugs": "https://github.com/benshawuk/udo-gen/issues",
+  "keywords": [
+    "laravel",
+    "react",
+    "code-generation",
+    "scaffolding",
+    "schema-first",
+    "crud",
+    "udo"
+  ],
   "bin": {
     "udo": "./bin/udo"
   },

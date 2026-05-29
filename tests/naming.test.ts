@@ -85,6 +85,15 @@ describe('pluralize', () => {
   it('does not double-pluralize vowel + y', () => {
     expect(pluralize('boy')).toBe('boys');
   });
+
+  it('handles irregular plurals via the dictionary', () => {
+    expect(pluralize('person')).toBe('people');
+    expect(pluralize('company')).toBe('companies');
+  });
+
+  it('leaves already-plural / uncountable words alone', () => {
+    expect(pluralize('series')).toBe('series');
+  });
 });
 
 describe('singularize', () => {
@@ -107,6 +116,10 @@ describe('singularize', () => {
     expect(singularize('products')).toBe('product');
     expect(singularize('users')).toBe('user');
   });
+
+  it('handles irregular plurals via the dictionary', () => {
+    expect(singularize('people')).toBe('person');
+  });
 });
 
 describe('defaultTable', () => {
@@ -115,8 +128,19 @@ describe('defaultTable', () => {
     expect(defaultTable('VerificationCode')).toBe('verification_codes');
   });
 
-  // Irregular words like 'News' or 'Sheep' that are already plural in English
-  // are intentionally not handled — the UDO can specify `table: "news"` explicitly.
+  it('handles irregular plurals correctly', () => {
+    expect(defaultTable('Category')).toBe('categories');
+    expect(defaultTable('Company')).toBe('companies');
+    expect(defaultTable('Person')).toBe('people');
+  });
+
+  it('only pluralizes the final word of a multi-word resource', () => {
+    expect(defaultTable('BlogCategory')).toBe('blog_categories');
+  });
+
+  it('leaves already-plural words alone', () => {
+    expect(defaultTable('Series')).toBe('series');
+  });
 });
 
 describe('deriveBelongsTo', () => {

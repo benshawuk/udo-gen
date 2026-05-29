@@ -18,6 +18,7 @@ import {
   scaffoldPagePath,
 } from './react-scaffold.js';
 import { writeSnapshot } from './snapshot.js';
+import { defaultTable } from '../utils/naming.js';
 
 export type WriteMode = 'regenerate' | 'scaffold-once' | 'create-once-by-pattern';
 export type ActionKind =
@@ -45,11 +46,6 @@ export interface GenOptions {
   dryRun?: boolean;
   /** Used to make migration filenames deterministic in tests. */
   now?: () => Date;
-}
-
-function defaultTable(resource: string): string {
-  const snake = resource.replace(/([a-z0-9])([A-Z])/g, '$1_$2').toLowerCase();
-  return snake.endsWith('s') ? snake : `${snake}s`;
 }
 
 function migrationTimestamp(now: Date): string {

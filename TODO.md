@@ -15,6 +15,17 @@ Master task list. Near-term goal: open-source the repo on GitHub.
 - [ ] Add CI (GitHub Actions): install, `pnpm build`, `pnpm test` on push/PR.
 - [ ] Add `CONTRIBUTING.md` (optional, nice for OSS).
 
+## Platform adapters (keep the UDO as the master resource)
+
+- [ ] Formalize the adapter interface so a target stack is a registered, pluggable
+      set of `render*(doc)` modules + templates rather than hard-wired imports in
+      `src/generate/index.ts`.
+- [ ] Add a `--target` (or config) selector so `udo gen` can emit for a chosen
+      stack instead of always Laravel + React.
+- [ ] Prove agnosticism with a second adapter set (e.g. Django/DRF backend or a
+      Vue/Svelte frontend) against the unchanged schema.
+- [ ] Document "writing your own adapter" once the interface is stable.
+
 ## Generator / CLI
 
 - [ ] `udo gen` real-file generation is wired in `src/generate/index.ts`; the

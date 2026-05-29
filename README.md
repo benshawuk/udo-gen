@@ -1,8 +1,10 @@
 # udo-gen
 
-> Schema-first code generator for Laravel + React. One **Unified Data Object** (UDO)
-> file describes a resource; the generator emits every artifact you would otherwise
-> hand-maintain across ~13 files.
+> Schema-first, platform-agnostic code generator. One **Unified Data Object** (UDO)
+> file describes a resource; adapters emit every artifact you would otherwise
+> hand-maintain. The first adapter set targets Laravel + React (~13 files), but the
+> UDO schema is the master resource - any backend or frontend can be added behind a
+> new adapter.
 
 ## What is a UDO?
 
@@ -13,6 +15,10 @@ validation, its relationships, and a few UI hints. It never contains logic.
 From that one file, `udo gen` produces the Eloquent model, migration, FormRequest,
 API Resource, factory, controller, route entry, TypeScript module (with Zod schemas),
 translation starter, and a React scaffold page - all kept consistent with each other.
+
+The UDO itself knows nothing about Laravel or React. It is a neutral description of a
+resource; the framework-specific output comes entirely from **adapters**. Laravel and
+React are simply the first adapters that ship in this repo.
 
 Two rules capture the whole philosophy:
 
@@ -27,6 +33,30 @@ Product.udo.json ──▶ udo gen ──▶ Model + Migration + FormRequest + R
    (one file)                     + Factory + Controller + routes + TS + Zod
                                   + lang + React page   (≈13 artifacts)
 ```
+
+## Platform-agnostic by design
+
+The UDO schema is the **master resource**. Everything downstream is an adapter, and
+an adapter is just a function from a parsed UDO to one output artifact. Today's
+adapters emit Laravel (PHP) and React (TypeScript), but nothing in the schema is
+tied to either.
+
+```
+                          ┌─ Laravel adapters ─▶ Model, Migration, FormRequest, ...
+                          │
+  Product.udo.json ──────▶┼─ React adapters ───▶ TS module, Zod, scaffold page, ...
+   (single source         │
+    of truth)             ├─ (Django / Rails / Spring) ─▶ models, serializers, ...   ← future
+                          │
+                          └─ (Vue / Svelte / Angular) ──▶ components, forms, ...      ← future
+```
+
+Adding support for another stack means writing new adapters against the same UDO -
+the schema, your `.udo.json` files, and the `udo` CLI stay exactly as they are. A new
+backend or frontend never requires changing the source of truth. Concretely, each
+adapter is a small `render*(doc)` module (see `src/generate/`) plus an Eta template
+(see `templates/`); a Django or Vue target would be a sibling set of those, selected
+per output.
 
 ## Install
 
@@ -227,9 +257,10 @@ Most real UDOs are a fraction of this size; this one is a tour.
 }
 ```
 
-### What this generates (the "adapters")
+### What this generates (the Laravel + React adapter set)
 
-Each generator turns the single UDO into one artifact. `udo gen` runs them all:
+Each adapter turns the single UDO into one artifact. `udo gen` runs the whole set
+below; a different target stack would supply its own equivalent set:
 
 | Generator              | Output                                                      | Write mode      |
 | ---------------------- | ---------------------------------------------------------- | --------------- |

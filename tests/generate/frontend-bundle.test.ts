@@ -17,6 +17,9 @@ import type { UdoDocument } from '../../src/types.js';
 // scaffold page, and the ResourcePage runtime - so the contract between them
 // (the namespace shape ResourcePage consumes, the `@/udo` + `@/lib` aliases,
 // JSX) is guarded against drift.
+//
+// react / @tanstack/react-query aren't deps of this package, so we stand up
+// minimal stub packages in a virtual node_modules rather than installing them.
 
 const here = dirname(fileURLToPath(import.meta.url));
 const projectRoot = resolve(here, '..', '..');
@@ -24,33 +27,30 @@ const projectRoot = resolve(here, '..', '..');
 // walking up into the real node_modules, while `@/*` maps to our virtual tree.
 const VROOT = resolve(projectRoot, '__vfe__');
 
-// Ambient stubs so we don't need react / @tanstack/react-query installed here.
-// useQuery is generic over its queryFn result so `data` stays strongly typed
-// (otherwise the runtime's row mapping would trip noImplicitAny).
-const GLOBALS_DTS = `
-declare module 'react' {
-  export function createElement(...args: any[]): any;
-  export const Fragment: any;
-}
-declare module '@tanstack/react-query' {
-  export function useQuery<T>(opts: {
-    queryKey: readonly unknown[];
-    queryFn: () => Promise<T>;
-  }): { data: T | undefined; isLoading: boolean; isError: boolean; error: unknown };
-}
-declare global {
-  namespace JSX {
-    interface Element {}
-    interface ElementClass {}
-    interface IntrinsicAttributes {
-      key?: string | number;
-    }
-    interface IntrinsicElements {
-      [name: string]: any;
-    }
+const REACT_DTS = `
+export function createElement(...args: any[]): any;
+export const Fragment: any;
+`;
+
+const REACT_QUERY_DTS = `
+export function useQuery<T>(opts: {
+  queryKey: readonly unknown[];
+  queryFn: () => Promise<T>;
+}): { data: T | undefined; isLoading: boolean; isError: boolean; error: unknown };
+`;
+
+// Global (non-module) ambient file: provides the JSX namespace.
+const JSX_DTS = `
+declare namespace JSX {
+  interface Element {}
+  interface ElementClass {}
+  interface IntrinsicAttributes {
+    key?: string | number;
+  }
+  interface IntrinsicElements {
+    [name: string]: any;
   }
 }
-export {};
 `;
 
 const compilerOptions: ts.CompilerOptions = {
@@ -67,9 +67,16 @@ const compilerOptions: ts.CompilerOptions = {
   paths: { '@/*': ['./*'] },
 };
 
-function typecheckBundle(files: Record<string, string>): ts.Diagnostic[] {
+interface Bundle {
+  /** App files compiled as program roots. */
+  roots: Record<string, string>;
+  /** Stub dependency files, resolved on demand (not program roots). */
+  deps: Record<string, string>;
+}
+
+function typecheckBundle(bundle: Bundle): ts.Diagnostic[] {
   const virtual = new Map<string, string>();
-  for (const [rel, contents] of Object.entries(files)) {
+  for (const [rel, contents] of Object.entries({ ...bundle.roots, ...bundle.deps })) {
     virtual.set(resolve(VROOT, rel), contents);
   }
 
@@ -91,7 +98,7 @@ function typecheckBundle(files: Record<string, string>): ts.Diagnostic[] {
       return realHost.readFile(fileName);
     },
     // Module resolution skips directories the host says don't exist, so the
-    // virtual tree must be reported as present.
+    // virtual tree (incl. node_modules stubs) must be reported as present.
     directoryExists(dirName) {
       const d = resolve(dirName);
       for (const f of virtual.keys()) {
@@ -101,11 +108,11 @@ function typecheckBundle(files: Record<string, string>): ts.Diagnostic[] {
     },
   };
 
-  const rootNames = [...virtual.keys()];
+  const rootNames = Object.keys(bundle.roots).map((rel) => resolve(VROOT, rel));
   const program = ts.createProgram(rootNames, compilerOptions, host);
   return ts
     .getPreEmitDiagnostics(program)
-    .filter((d) => !!d.file && d.file.fileName.startsWith(VROOT));
+    .filter((d) => !!d.file && d.file.fileName.startsWith(VROOT) && !d.file.fileName.includes('node_modules'));
 }
 
 function formatDiagnostic(d: ts.Diagnostic): string {
@@ -118,35 +125,39 @@ function formatDiagnostic(d: ts.Diagnostic): string {
   return msg;
 }
 
-async function buildVirtualBundle(doc: UdoDocument): Promise<Record<string, string>> {
-  const files: Record<string, string> = {};
-  files[`udo/${doc.resource}.ts`] = await renderTsModule(doc);
-
-  // Manifest: derive the export line the generator would emit for this module
-  // (buildManifest reads a real dir; here we only have one module, so emit it
-  // directly with the same shape).
-  files['udo/index.ts'] = `export * as ${doc.resource} from './${doc.resource}';\n`;
-
-  files['lib/udo-ui/resource-page.tsx'] = await renderResourcePageRuntime();
-
+async function buildBundle(doc: UdoDocument): Promise<Bundle> {
   const { featureDir, filename } = scaffoldPagePath(doc);
-  files[`features/${featureDir}/${filename}`] = await renderScaffoldPage(doc);
-
-  files['globals.d.ts'] = GLOBALS_DTS;
-  return files;
+  const roots: Record<string, string> = {
+    [`udo/${doc.resource}.ts`]: await renderTsModule(doc),
+    // Manifest shape the generator emits for this single module.
+    ['udo/index.ts']: `export * as ${doc.resource} from './${doc.resource}';\n`,
+    ['lib/udo-ui/resource-page.tsx']: await renderResourcePageRuntime(),
+    [`features/${featureDir}/${filename}`]: await renderScaffoldPage(doc),
+    ['jsx.d.ts']: JSX_DTS,
+  };
+  const deps: Record<string, string> = {
+    ['node_modules/react/package.json']: JSON.stringify({ name: 'react', types: 'index.d.ts' }),
+    ['node_modules/react/index.d.ts']: REACT_DTS,
+    ['node_modules/@tanstack/react-query/package.json']: JSON.stringify({
+      name: '@tanstack/react-query',
+      types: 'index.d.ts',
+    }),
+    ['node_modules/@tanstack/react-query/index.d.ts']: REACT_QUERY_DTS,
+  };
+  return { roots, deps };
 }
 
 describe('Generated frontend bundle typechecks as a whole', () => {
   it('Product.udo.json → module + manifest + page + runtime compile together', async () => {
     const doc = parseUdoFile(join(projectRoot, 'examples/Product.udo.json')).document as UdoDocument;
-    const diagnostics = typecheckBundle(await buildVirtualBundle(doc));
+    const diagnostics = typecheckBundle(await buildBundle(doc));
     expect(diagnostics.map(formatDiagnostic)).toEqual([]);
   });
 
   it('VerificationCode.udo.json → full bundle compiles together', async () => {
     const doc = parseUdoFile(join(projectRoot, 'examples/VerificationCode.udo.json'))
       .document as UdoDocument;
-    const diagnostics = typecheckBundle(await buildVirtualBundle(doc));
+    const diagnostics = typecheckBundle(await buildBundle(doc));
     expect(diagnostics.map(formatDiagnostic)).toEqual([]);
   });
 });

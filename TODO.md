@@ -8,8 +8,8 @@ Master task list. Near-term goal: open-source the repo on GitHub.
 - [x] Rewrite the README: short UDO concept + one fully annotated example that
       exercises all syntax and lists every generator ("adapter").
 - [x] Add a `LICENSE` file (MIT).
-- [ ] Add `license`, `repository`, `author`, and `keywords` fields to
-      `package.json` before any npm publish.
+- [x] Add `license`, `repository`, `author`, `homepage`, `bugs`, and `keywords`
+      fields to `package.json`.
 - [ ] Confirm publish contents: add a `files` allowlist (or `.npmignore`) so only
       `dist/`, `schema/`, `templates/`, `bin/`, `README`, `LICENSE` ship.
 - [ ] Add CI (GitHub Actions): install, `pnpm build`, `pnpm test` on push/PR.
@@ -34,5 +34,5 @@ Master task list. Near-term goal: open-source the repo on GitHub.
 
 ## Housekeeping
 
-- [ ] `.DS_Store` files are present in the working tree (already git-ignored) -
-      confirm none are tracked.
+- [x] `.DS_Store` - confirmed none tracked and pattern is git-ignored.
+- [x] `package.json` scripts - confirmed no duplicate keys.

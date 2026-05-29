@@ -2,6 +2,7 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Eta } from 'eta';
 import type { UdoDocument, UdoField, PrimitiveType } from '../types.js';
+import { defaultTable } from '../utils/naming.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const templateDir = resolve(here, '..', '..', 'templates');
@@ -21,11 +22,6 @@ const UNSIGNED_TYPES: PrimitiveType[] = [
   'unsignedTinyInteger',
   'foreignId',
 ];
-
-function defaultTable(resource: string): string {
-  const snake = resource.replace(/([a-z0-9])([A-Z])/g, '$1_$2').toLowerCase();
-  return snake.endsWith('s') ? snake : `${snake}s`;
-}
 
 function endpointFromTable(table: string): string {
   return `/api/${table.replace(/_/g, '-')}`;

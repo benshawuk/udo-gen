@@ -2,6 +2,7 @@
 import { Command } from 'commander';
 import kleur from 'kleur';
 import { parseUdoFile } from './parse.js';
+import { defaultTable } from './utils/naming.js';
 import { renderModelBase } from './generate/model-base.js';
 import { renderModelExtension } from './generate/model-extension.js';
 import { renderMigration } from './generate/migration.js';
@@ -216,7 +217,7 @@ program
       console.log(`  ${kleur.yellow('~ WARN')} ${c.name} (${props}) — manual ALTER required`);
     }
 
-    const table = current.table ?? toTableName(current.resource);
+    const table = current.table ?? defaultTable(current.resource);
     const contents = await renderAlterMigration(current, diff);
 
     const ts = migrationTs(new Date());
@@ -250,10 +251,6 @@ function migrationTs(now: Date): string {
   );
 }
 
-function toTableName(resource: string): string {
-  const snake = resource.replace(/([a-z0-9])([A-Z])/g, '$1_$2').toLowerCase();
-  return snake.endsWith('s') ? snake : `${snake}s`;
-}
 
 program.parseAsync(process.argv).catch((err) => {
   console.error(kleur.red(`udo: ${err instanceof Error ? err.message : String(err)}`));

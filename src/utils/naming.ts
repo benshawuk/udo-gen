@@ -1,7 +1,11 @@
 /**
  * Naming convention helpers shared across generators.
- * Intentionally simple; covers the 95% case. Edge cases get explicit overrides in the UDO.
+ * Pluralization/singularization use the `pluralize` inflection dictionary
+ * (handles irregulars: category->categories, person->people, series->series),
+ * mirroring Laravel's Str::plural()/Str::singular() which Eloquent relies on.
  */
+
+import pluralizeWord from 'pluralize';
 
 export function snakeToPascal(input: string): string {
   return input
@@ -29,33 +33,33 @@ export function pascalToCamel(input: string): string {
 }
 
 /**
- * Crude singularize. Handles common English plurals (~95% coverage).
- * For irregulars (people, men, children) the UDO can declare overrides on the field.
+ * Singularize a word via the inflection dictionary.
+ * e.g. categories -> category, people -> person, series -> series.
  */
 export function singularize(input: string): string {
-  if (/ies$/.test(input)) return input.replace(/ies$/, 'y');
-  if (/sses$/.test(input)) return input.replace(/es$/, '');
-  if (/xes$/.test(input) || /shes$/.test(input) || /ches$/.test(input)) {
-    return input.replace(/es$/, '');
-  }
-  if (/s$/.test(input) && !/ss$/.test(input)) return input.replace(/s$/, '');
-  return input;
+  return pluralizeWord.singular(input);
 }
 
 /**
- * Crude pluralize. Handles common English plurals (~95% coverage).
+ * Pluralize a word via the inflection dictionary.
+ * e.g. category -> categories, person -> people, series -> series.
  */
 export function pluralize(input: string): string {
-  if (/[^aeiou]y$/.test(input)) return input.replace(/y$/, 'ies');
-  if (/(s|x|sh|ch)$/.test(input)) return `${input}es`;
-  return `${input}s`;
+  return pluralizeWord(input);
 }
 
 /**
- * Default table name from a PascalCase resource name.
+ * Default snake_case plural table name from a PascalCase resource. Only the
+ * final word is pluralized, matching Laravel's table-naming convention.
+ * e.g. "Product" -> "products", "Category" -> "categories",
+ *      "VerificationCode" -> "verification_codes".
  */
 export function defaultTable(resource: string): string {
-  return pluralize(pascalToSnake(resource));
+  const parts = pascalToSnake(resource).split('_');
+  const lastIndex = parts.length - 1;
+  const last = parts[lastIndex];
+  if (last !== undefined) parts[lastIndex] = pluralize(last);
+  return parts.join('_');
 }
 
 /**

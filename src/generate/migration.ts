@@ -2,6 +2,7 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Eta } from 'eta';
 import type { UdoDocument, UdoField, UdoIndex, PrimitiveType } from '../types.js';
+import { defaultTable } from '../utils/naming.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const templateDir = resolve(here, '..', '..', 'templates');
@@ -16,10 +17,6 @@ export interface MigrationContext {
   compositeIndexes: { columns: string[]; unique: boolean; name?: string }[];
 }
 
-function defaultTable(resource: string): string {
-  const snake = resource.replace(/([a-z0-9])([A-Z])/g, '$1_$2').toLowerCase();
-  return snake.endsWith('s') ? snake : `${snake}s`;
-}
 
 function phpLiteral(value: unknown): string {
   if (value === null) return 'null';
@@ -36,16 +33,15 @@ function pivotTableFromReferences(references: string): string {
 
 const STRING_TYPES: PrimitiveType[] = ['string'];
 
-function blueprintCall(name: string, field: UdoField): string {
+/**
+ * The bare column definition, WITHOUT any modifiers or FK constraint.
+ * e.g. `$table->foreignId('parent_id')`, `$table->decimal('price', 10, 2)`.
+ */
+function blueprintBase(name: string, field: UdoField): string {
   const type = field.type;
 
-  // foreignId is special — uses constrained() chain
   if (type === 'foreignId') {
-    const refTable = field.references ? pivotTableFromReferences(field.references) : undefined;
-    const parts = [`$table->foreignId('${name}')`];
-    if (refTable) parts.push(`->constrained('${refTable}')`);
-    if (field.onDelete) parts.push(`->onDelete('${field.onDelete}')`);
-    return parts.join('');
+    return `$table->foreignId('${name}')`;
   }
 
   // decimal takes precision + scale
@@ -63,23 +59,40 @@ function blueprintCall(name: string, field: UdoField): string {
   return `$table->${type}('${name}')`;
 }
 
+/**
+ * Column-level modifiers. These MUST be emitted before any constrained() call:
+ * constrained() returns a ForeignKeyDefinition, so modifiers chained after it
+ * (especially nullable()) never reach the column. A NOT NULL column with
+ * `ON DELETE SET NULL` is rejected by the database (MySQL errno 150).
+ */
 function modifierChain(field: UdoField): string {
   const parts: string[] = [];
   if (field.nullable) parts.push('->nullable()');
   if (field.default !== undefined) parts.push(`->default(${phpLiteral(field.default)})`);
-  // foreignId carries its own unique-via-DB-constraint story; skip these modifiers on FK columns.
-  if (field.type !== 'foreignId') {
-    if (field.unique) parts.push('->unique()');
-    if (field.index) parts.push('->index()');
-  } else {
-    // FK columns can still be uniquely indexed (e.g. one-to-one)
-    if (field.unique) parts.push('->unique()');
-  }
+  if (field.unique) parts.push('->unique()');
+  // A constrained() FK already creates an index, so an explicit ->index() would
+  // be a duplicate. But a bare foreignId WITHOUT references gets no constrained()
+  // call, so it still needs the explicit index when requested.
+  const constrainedWillIndex = field.type === 'foreignId' && !!field.references;
+  if (field.index && !constrainedWillIndex) parts.push('->index()');
+  return parts.join('');
+}
+
+/**
+ * The foreign-key constraint chain, emitted AFTER the column modifiers so the
+ * column (incl. nullable) is fully defined before the constraint is built.
+ */
+function foreignKeyChain(field: UdoField): string {
+  if (field.type !== 'foreignId' || !field.references) return '';
+  const parts: string[] = [];
+  const refTable = pivotTableFromReferences(field.references);
+  parts.push(`->constrained('${refTable}')`);
+  if (field.onDelete) parts.push(`->onDelete('${field.onDelete}')`);
   return parts.join('');
 }
 
 export function buildColumnLine(name: string, field: UdoField): string {
-  return `${blueprintCall(name, field)}${modifierChain(field)};`;
+  return `${blueprintBase(name, field)}${modifierChain(field)}${foreignKeyChain(field)};`;
 }
 
 export function buildMigrationContext(doc: UdoDocument): MigrationContext {

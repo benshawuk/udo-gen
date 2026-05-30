@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs';
 import type { UdoDocument } from '../types.js';
+import { defaultTable } from '../utils/naming.js';
 
 export interface RoutesInjection {
   /** Final contents of routes/api.php after injection. */
@@ -28,10 +29,6 @@ function tableToRoutePath(table: string): string {
   return table.replace(/_/g, '-');
 }
 
-function defaultTable(resource: string): string {
-  const snake = resource.replace(/([a-z0-9])([A-Z])/g, '$1_$2').toLowerCase();
-  return snake.endsWith('s') ? snake : `${snake}s`;
-}
 
 export function injectRoutes(existing: string, doc: UdoDocument): RoutesInjection {
   // Honour opt-out

@@ -17,8 +17,13 @@ function fakeForField(name: string, field: UdoField): string {
     return `fake()->randomElement([${items}])`;
   }
 
-  // foreignId → related factory
+  // foreignId → related factory.
   if (field.type === 'foreignId') {
+    // A nullable FK defaults to null. This is essential for self-referencing
+    // FKs (e.g. category.parent_id -> categories.id): emitting the model's own
+    // factory there recurses infinitely, creating a parent for every row
+    // forever. Callers opt in to a real parent via ->state([...]) when needed.
+    if (field.nullable) return 'null';
     const inferred = deriveBelongsTo(name, field.references);
     if (inferred) return `\\App\\Models\\${inferred.model}::factory()`;
     return 'fake()->numberBetween(1, 1000)';

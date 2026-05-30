@@ -2,6 +2,7 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Eta } from 'eta';
 import type { UdoDocument } from '../types.js';
+import { defaultTable } from '../utils/naming.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const templateDir = resolve(here, '..', '..', 'templates');
@@ -18,11 +19,6 @@ function titleCase(input: string): string {
 function fieldLabel(name: string): string {
   if (name.endsWith('_id')) return titleCase(name.slice(0, -3));
   return titleCase(name);
-}
-
-function defaultTable(resource: string): string {
-  const snake = resource.replace(/([a-z0-9])([A-Z])/g, '$1_$2').toLowerCase();
-  return snake.endsWith('s') ? snake : `${snake}s`;
 }
 
 export interface LangStarterContext {

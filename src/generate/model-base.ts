@@ -2,7 +2,7 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Eta } from 'eta';
 import type { UdoDocument, UdoField, UdoRelationship } from '../types.js';
-import { deriveBelongsTo, snakeToCamel } from '../utils/naming.js';
+import { deriveBelongsTo, snakeToCamel, defaultTable } from '../utils/naming.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const templateDir = resolve(here, '..', '..', 'templates');
@@ -52,10 +52,6 @@ function castFor(name: string, field: UdoField): CastRow | null {
   }
 }
 
-function defaultTable(resource: string): string {
-  const snake = resource.replace(/([a-z0-9])([A-Z])/g, '$1_$2').toLowerCase();
-  return snake.endsWith('s') ? snake : `${snake}s`;
-}
 
 /**
  * Build relationship methods for the abstract base.

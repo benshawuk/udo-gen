@@ -1,0 +1,19 @@
+{
+  "$schema": "../../../schema/udo-v1.schema.json",
+  "udoVersion": 1,
+  "resource": "Profile",
+  "fields": {
+    "user_id": {
+      "type": "foreignId",
+      "required": true,
+      "references": "users.id",
+      "onDelete": "cascade",
+      "unique": true
+    },
+    "bio": { "type": "text", "format": "markdown", "nullable": true },
+    "avatar_url": { "type": "string", "format": "url", "nullable": true },
+    "website": { "type": "string", "format": "url", "nullable": true },
+    "twitter_handle": { "type": "string", "nullable": true, "max": 15 },
+    "birthday": { "type": "date", "nullable": true }
+  }
+}

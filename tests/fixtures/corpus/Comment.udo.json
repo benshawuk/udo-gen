@@ -1,0 +1,38 @@
+{
+  "$schema": "../../../schema/udo-v1.schema.json",
+  "udoVersion": 1,
+  "resource": "Comment",
+  "softDeletes": true,
+  "fields": {
+    "body": { "type": "text", "required": true, "max": 2000 },
+    "status": {
+      "type": "string",
+      "required": true,
+      "values": ["pending", "approved", "spam"],
+      "default": "pending"
+    },
+    "is_pinned": { "type": "boolean", "default": false, "index": true },
+    "author_id": {
+      "type": "foreignId",
+      "required": true,
+      "references": "users.id",
+      "onDelete": "cascade"
+    },
+    "post_id": {
+      "type": "foreignId",
+      "required": true,
+      "references": "posts.id",
+      "onDelete": "cascade"
+    },
+    "parent_id": {
+      "type": "foreignId",
+      "nullable": true,
+      "references": "comments.id",
+      "onDelete": "set null"
+    }
+  },
+  "relationships": {
+    "replies": { "type": "hasMany", "model": "Comment" }
+  },
+  "indexes": [{ "columns": ["post_id", "status"] }]
+}

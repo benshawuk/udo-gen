@@ -1,0 +1,19 @@
+{
+  "$schema": "../../../schema/udo-v1.schema.json",
+  "udoVersion": 1,
+  "resource": "Tag",
+  "fields": {
+    "name": { "type": "string", "required": true, "max": 50, "unique": true },
+    "slug": {
+      "type": "string",
+      "required": true,
+      "max": 60,
+      "format": "slug",
+      "validation": { "backend": ["unique:tags,slug"] }
+    }
+  },
+  "relationships": {
+    "posts": { "type": "belongsToMany", "model": "Post", "pivot": "post_tag" },
+    "products": { "type": "belongsToMany", "model": "Product", "pivot": "product_tag" }
+  }
+}

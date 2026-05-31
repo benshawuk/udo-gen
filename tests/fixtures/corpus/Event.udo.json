@@ -1,0 +1,24 @@
+{
+  "$schema": "../../../schema/udo-v1.schema.json",
+  "udoVersion": 1,
+  "resource": "Event",
+  "timestamps": true,
+  "fields": {
+    "title": { "type": "string", "required": true, "max": 255 },
+    "description": { "type": "longText", "format": "richText", "nullable": true },
+    "starts_at": { "type": "dateTime", "required": true, "index": true },
+    "ends_at": { "type": "dateTime", "required": true },
+    "all_day": { "type": "boolean", "default": false },
+    "start_time": { "type": "time", "nullable": true },
+    "capacity": { "type": "unsignedInteger", "nullable": true, "min": 1, "max": 100000 },
+    "priority": { "type": "integer", "required": true, "values": [1, 2, 3], "default": 2 },
+    "color": { "type": "string", "format": "color", "nullable": true, "length": 7 },
+    "organizer_id": {
+      "type": "foreignId",
+      "required": true,
+      "references": "users.id",
+      "onDelete": "cascade"
+    }
+  },
+  "indexes": [{ "columns": ["starts_at", "ends_at"] }]
+}

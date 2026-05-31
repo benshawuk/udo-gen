@@ -1,0 +1,22 @@
+{
+  "$schema": "../../../schema/udo-v1.schema.json",
+  "udoVersion": 1,
+  "resource": "Company",
+  "fields": {
+    "name": { "type": "string", "required": true, "max": 200 },
+    "email": {
+      "type": "string",
+      "format": "email",
+      "required": true,
+      "validation": { "backend": ["unique:companies,email"] }
+    },
+    "phone": { "type": "string", "format": "phone", "nullable": true },
+    "vat_number": { "type": "string", "nullable": true, "length": 12 },
+    "is_active": { "type": "boolean", "default": true },
+    "employee_count": { "type": "unsignedInteger", "default": 0 }
+  },
+  "relationships": {
+    "people": { "type": "hasMany", "model": "Person" },
+    "comments": { "type": "morphMany", "model": "Comment", "morphName": "commentable" }
+  }
+}

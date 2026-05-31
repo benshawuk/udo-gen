@@ -1,0 +1,15 @@
+{
+  "$schema": "../../../schema/udo-v1.schema.json",
+  "udoVersion": 1,
+  "resource": "Image",
+  "fields": {
+    "path": { "type": "string", "required": true, "max": 2048 },
+    "alt_text": { "type": "string", "nullable": true, "max": 255 },
+    "width": { "type": "unsignedInteger", "nullable": true },
+    "height": { "type": "unsignedInteger", "nullable": true },
+    "size_bytes": { "type": "bigInteger", "nullable": true }
+  },
+  "relationships": {
+    "imageable": { "type": "morphTo", "model": "Image", "morphName": "imageable" }
+  }
+}

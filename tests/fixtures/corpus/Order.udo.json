@@ -1,0 +1,40 @@
+{
+  "$schema": "../../../schema/udo-v1.schema.json",
+  "udoVersion": 1,
+  "resource": "Order",
+  "softDeletes": true,
+  "controller": {
+    "mode": "auto",
+    "eagerLoad": ["customer"],
+    "defaultSort": "-created_at",
+    "search": ["reference"],
+    "pageSize": 25
+  },
+  "fields": {
+    "reference": { "type": "string", "required": true, "unique": true, "max": 32 },
+    "customer_id": {
+      "type": "foreignId",
+      "required": true,
+      "references": "users.id",
+      "onDelete": "restrict"
+    },
+    "status": {
+      "type": "string",
+      "required": true,
+      "values": ["pending", "paid", "shipped", "delivered", "cancelled", "refunded"],
+      "default": "pending"
+    },
+    "subtotal": { "type": "decimal", "format": "currency", "required": true, "precision": 12, "scale": 2, "min": 0 },
+    "tax": { "type": "decimal", "format": "currency", "required": true, "precision": 12, "scale": 2, "min": 0 },
+    "total": { "type": "decimal", "format": "currency", "required": true, "precision": 12, "scale": 2, "min": 0 },
+    "discount_percent": { "type": "decimal", "format": "percent", "nullable": true, "precision": 5, "scale": 2 },
+    "notes": { "type": "longText", "nullable": true },
+    "metadata": { "type": "json", "nullable": true },
+    "placed_at": { "type": "dateTime", "nullable": true, "index": true },
+    "shipped_at": { "type": "timestamp", "nullable": true }
+  },
+  "indexes": [
+    { "columns": ["status", "placed_at"] },
+    { "columns": ["customer_id", "created_at"], "unique": false, "name": "orders_customer_recent" }
+  ]
+}

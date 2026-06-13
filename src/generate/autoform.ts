@@ -64,6 +64,21 @@ function fieldLabelKey(table: string, name: string): string {
   return `${table}.fields.${name}`;
 }
 
+/** `support_email` -> `Support email`. Scaffold-once placeholder text. */
+function humanize(name: string): string {
+  const words = name.replace(/_id$/, '').replace(/_/g, ' ').trim();
+  return words.charAt(0).toUpperCase() + words.slice(1);
+}
+
+/** step attribute for a number input derived from a decimal/float scale. */
+function stepFor(field: UdoField): string | undefined {
+  if (field.type === 'decimal' || field.type === 'float' || field.type === 'double') {
+    const scale = typeof field.scale === 'number' ? field.scale : 2;
+    return scale > 0 ? `0.${'0'.repeat(scale - 1)}1` : '1';
+  }
+  return undefined;
+}
+
 /**
  * UDO field -> autoform component type.
  * Priority: explicit ui.widget > enum values > semantic format > primitive type
@@ -193,6 +208,12 @@ export interface AutoformContext {
     isForeignId: boolean;
     references?: string;
     displayField?: string;
+    /** Default value (used as a select's defaultValue). */
+    default?: string | number | boolean | null;
+    /** step attribute for number inputs (e.g. '0.01' for decimal scale 2). */
+    step?: string;
+    /** Humanized field name, used as a placeholder/label. */
+    placeholder: string;
   }[];
 }
 
@@ -214,6 +235,9 @@ export function buildAutoformContext(doc: UdoDocument): AutoformContext {
     isForeignId: field.type === 'foreignId',
     references: field.references,
     displayField: field.displayField,
+    default: field.default,
+    step: stepFor(field),
+    placeholder: humanize(name),
   }));
 
   return {
@@ -320,5 +344,77 @@ ${metaBody}
     // titles/buttons inherit from the global autoform.config.ts
   },
 });
+`;
+}
+
+/**
+ * Renders one field's JSX inside <Autoform>. Uses native HTML elements so the
+ * generated form compiles in any project with zero design-system imports.
+ * Autoform can only wire hook-free children, so enum/boolean fields use a
+ * native <select>/<input type=checkbox> (not Radix Select/Switch).
+ */
+function fieldJsx(f: AutoformContext['fields'][number]): string {
+  const { name, widget, placeholder } = f;
+
+  if (widget === 'textarea') {
+    return `      <textarea name="${name}" placeholder="${placeholder}" />`;
+  }
+
+  if (widget === 'select') {
+    const def = f.default !== undefined && f.default !== null ? String(f.default) : '';
+    if (f.options && f.options.length > 0) {
+      const opts = f.options
+        .map((o) => `          <option value="${String(o)}">${String(o)}</option>`)
+        .join('\n');
+      return `      <label>\n        ${placeholder}\n        <select name="${name}" defaultValue="${def}">\n${opts}\n        </select>\n      </label>`;
+    }
+    // foreignId: no enum values; leave a stub + TODO to load options.
+    const ref = f.references ? ` options from ${f.references}` : ' options';
+    const disp = f.displayField ? ` (label: ${f.displayField})` : '';
+    return `      <label>\n        ${placeholder}\n        {/* TODO: load${ref}${disp} from the related resource */}\n        <select name="${name}" defaultValue="">\n          <option value="">Select…</option>\n        </select>\n      </label>`;
+  }
+
+  if (widget === 'switch' || widget === 'checkbox' || widget === 'radio') {
+    // boolean -> checkbox (radio would need options; default to checkbox here).
+    return `      <label>\n        <input name="${name}" type="checkbox" /> ${placeholder}\n      </label>`;
+  }
+
+  // input-family widgets: text | email | password | number | date
+  const typeAttr =
+    widget === 'text' ? '' : ` type="${widget}"`;
+  const stepAttr = widget === 'number' && f.step ? ` step="${f.step}"` : '';
+  const placeholderAttr = widget === 'date' ? '' : ` placeholder="${placeholder}"`;
+  return `      <input name="${name}"${typeAttr}${stepAttr}${placeholderAttr} />`;
+}
+
+/**
+ * Renders `{resource}-form.tsx` (scaffold-once): the field-body component that
+ * makes the autoform-config actually render. Autoform wires each named child to
+ * React Hook Form and applies the generated rules, then POSTs to the endpoint.
+ */
+export function renderAutoformForm(doc: UdoDocument): string {
+  const ctx = buildAutoformContext(doc);
+  const componentName = `${ctx.resource}Form`;
+  const fieldsJsx = ctx.fields.map(fieldJsx).join('\n');
+
+  return `// SCAFFOLD-ONCE: udo-gen wrote this once and will NOT overwrite it. Edit freely.
+//
+// Field widgets were derived from the ${ctx.resource} UDO. Native HTML elements are
+// used so this compiles anywhere; swap them for your design-system components
+// (e.g. <Input>, <Select>) as you own this file. Labels/placeholders are plain
+// text to localize. Autoform wires each named child to React Hook Form, applies
+// the rules from ./validation/autoform-config, and POSTs to ${ctx.endpoint}.
+
+import { Autoform } from '@/lib/autoform';
+import config from './validation/autoform-config';
+
+export function ${componentName}() {
+  return (
+    <Autoform config={config} mode="create">
+${fieldsJsx}
+      <button type="submit">Create ${ctx.resource}</button>
+    </Autoform>
+  );
+}
 `;
 }

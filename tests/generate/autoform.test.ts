@@ -5,6 +5,7 @@ import {
   widgetFor,
   renderAutoformGenerated,
   renderAutoformConfig,
+  renderAutoformForm,
 } from '../../src/generate/autoform.js';
 
 const sample: UdoDocument = {
@@ -97,5 +98,37 @@ describe('renderAutoformConfig', () => {
     // FK gets a hint to source options from the related resource
     expect(out).toContain('category_id');
     expect(out).toContain('FK from categories.id');
+  });
+});
+
+describe('renderAutoformForm', () => {
+  it('emits a form-body component with one wired child per UDO field', () => {
+    const out = renderAutoformForm(sample);
+    expect(out).toContain('SCAFFOLD-ONCE');
+    expect(out).toContain("import { Autoform } from '@/lib/autoform'");
+    expect(out).toContain("import config from './validation/autoform-config'");
+    expect(out).toContain('export function ProductForm()');
+    expect(out).toContain('<Autoform config={config} mode="create">');
+    expect(out).toContain('<button type="submit">Create Product</button>');
+  });
+
+  it('maps each widget to the right native element', () => {
+    const out = renderAutoformForm(sample);
+    expect(out).toContain('<input name="title" placeholder="Title" />'); // text
+    expect(out).toContain('<textarea name="description"'); // textarea
+    expect(out).toContain('<input name="contact_email" type="email"'); // email
+    expect(out).toContain('<input name="published_at" type="date" />'); // date (no placeholder)
+    expect(out).toContain('<input name="is_active" type="checkbox" />'); // boolean -> checkbox
+    // enum -> native <select> with the UDO values
+    expect(out).toContain('<select name="status"');
+    expect(out).toContain('<option value="draft">draft</option>');
+  });
+
+  it('decimal number inputs get a step from the scale; FK selects get a TODO', () => {
+    const out = renderAutoformForm(sample);
+    expect(out).toContain('<input name="price" type="number"'); // decimal -> number
+    // category_id is a foreignId -> select stub with a load-options TODO
+    expect(out).toContain('<select name="category_id"');
+    expect(out).toContain('TODO: load options from categories.id');
   });
 });

@@ -8,7 +8,7 @@ import { renderModelExtension } from './generate/model-extension.js';
 import { renderMigration } from './generate/migration.js';
 import { renderFormRequest } from './generate/form-request.js';
 import { renderTsModule } from './generate/ts-module.js';
-import { renderAutoformGenerated, renderAutoformConfig } from './generate/autoform.js';
+import { renderAutoformGenerated, renderAutoformConfig, renderAutoformForm } from './generate/autoform.js';
 import { renderTransformer } from './generate/resource-transformer.js';
 import { renderFactory } from './generate/factory.js';
 import {
@@ -99,6 +99,10 @@ program
         process.stdout.write(renderAutoformConfig(result.document));
         break;
       }
+      case 'autoform-form': {
+        process.stdout.write(renderAutoformForm(result.document));
+        break;
+      }
       case 'transformer': {
         const output = await renderTransformer(result.document);
         process.stdout.write(output);
@@ -121,7 +125,7 @@ program
       }
       default:
         console.error(
-          `${kleur.red('✗')} Unknown artifact '${options.artifact}'. Known: model-base, model-extension, migration, form-request, ts-module, autoform-generated, autoform-config, transformer, factory, controller-base, controller-extension`,
+          `${kleur.red('✗')} Unknown artifact '${options.artifact}'. Known: model-base, model-extension, migration, form-request, ts-module, autoform-generated, autoform-config, autoform-form, transformer, factory, controller-base, controller-extension`,
         );
         process.exit(2);
     }

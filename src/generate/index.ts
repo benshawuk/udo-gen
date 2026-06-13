@@ -9,7 +9,7 @@ import { renderTransformer } from './resource-transformer.js';
 import { renderFactory } from './factory.js';
 import { renderControllerBase, renderControllerExtension } from './controller-base.js';
 import { renderTsModule } from './ts-module.js';
-import { renderAutoformGenerated, renderAutoformConfig } from './autoform.js';
+import { renderAutoformGenerated, renderAutoformConfig, renderAutoformForm } from './autoform.js';
 import { injectRoutes, loadRoutesFile } from './routes.js';
 import { renderLangStarter } from './lang-starter.js';
 import { buildManifest } from './manifest.js';
@@ -279,9 +279,10 @@ export async function planAndGenerate(
       );
     }
   } else if (target === 'autoform') {
-    // --- autoform target: validation (regen) + feature config (scaffold-once) ---
-    const { featureDir } = scaffoldPagePath(doc);
-    const validationDir = join(root, frontendRoot, 'features', featureDir, 'validation');
+    // --- autoform target: validation (regen) + feature config + form (scaffold-once) ---
+    const { featureDir, filename } = scaffoldPagePath(doc);
+    const featurePath = join(root, frontendRoot, 'features', featureDir);
+    const validationDir = join(featurePath, 'validation');
 
     await emitRegen(
       plan,
@@ -296,6 +297,16 @@ export async function planAndGenerate(
       'autoform-config',
       join(validationDir, 'autoform-config.ts'),
       renderAutoformConfig(doc),
+      force,
+      dryRun,
+    );
+
+    // The form-body component that makes the config actually render.
+    await emitScaffold(
+      plan,
+      'autoform-form',
+      join(featurePath, filename.replace('-page.tsx', '-form.tsx')),
+      renderAutoformForm(doc),
       force,
       dryRun,
     );

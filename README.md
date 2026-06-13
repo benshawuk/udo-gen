@@ -8,9 +8,11 @@
 
 ## What is a UDO?
 
-A **Unified Data Object** is a single declarative file (`{Resource}.udo.json`, written
-in JSONC) that states the *facts* about a resource: its fields, their types and
-validation, its relationships, and a few UI hints. It never contains logic.
+A **Unified Data Object** is a single declarative file that states the *facts* about
+a resource: its fields, their types and validation, its relationships, and a few UI
+hints. It never contains logic. It comes in two interchangeable authoring formats:
+`{Resource}.udo.json` (JSONC) and `{Resource}.pudo.php` (**PUDO** - the same facts
+written as a Laravel-style PHP class; see [PUDO](#pudo-authoring-the-udo-in-php)).
 
 From that one file, `udo gen` produces the Eloquent model, migration, FormRequest,
 API Resource, factory, controller, route entry, TypeScript module (with Zod schemas),
@@ -284,6 +286,112 @@ below; a different target stack would supply its own equivalent set:
 
 ---
 
+## PUDO: authoring the UDO in PHP
+
+If your team lives in Laravel, the same UDO can be written as a PHP class instead of
+JSONC - a **PUDO** (`{Resource}.pudo.php`). It is not a different schema: a PUDO
+serializes to the identical UDO v1 document, validates against the same JSON Schema,
+and feeds the same adapters. Field declarations read like a Laravel migration:
+
+```php
+<?php
+
+use Pudo\Blueprint;
+use Pudo\Controller;
+use Pudo\Relations;
+use Pudo\Resource;
+
+class Product extends Resource
+{
+    protected ?string $table = 'products';   // optional; defaults to snake_case plural
+    protected bool $softDeletes = true;
+
+    public function fields(Blueprint $table): void
+    {
+        $table->string('title')->required()->max(255);
+
+        $table->string('slug')->required()->format('slug')->max(255)->unique()
+            ->rules(backend: ['unique:products,slug']);
+
+        $table->decimal('price', precision: 10, scale: 2)
+            ->format('currency')->required()->min(0);
+
+        $table->enum('status', ['draft', 'published', 'archived'])
+            ->required()->default('draft');
+
+        $table->foreignId('category_id')->required()
+            ->references('categories.id')->cascadeOnDelete()
+            ->displayField('name');
+
+        $table->dateTime('published_at')->nullable()->index();
+
+        $table->index(['status', 'published_at']);   // composite index
+    }
+
+    public function relationships(Relations $relations): void
+    {
+        $relations->belongsToMany('tags', 'Tag')->pivot('product_tag');
+        $relations->hasMany('reviews', 'Review');
+    }
+
+    public function controller(): string|Controller
+    {
+        return Controller::auto()
+            ->eagerLoad('category')
+            ->defaultSort('-created_at')
+            ->pageSize(50);
+    }
+}
+```
+
+Every CLI command accepts either format:
+
+```bash
+udo validate udo/Product.pudo.php
+udo gen      udo/Product.pudo.php
+udo migrate  udo/Product.pudo.php
+```
+
+How it works: the CLI evaluates the file with your `php` binary (PHP 8.1+ required on
+PATH), the class serializes itself to the canonical JSON document, and everything
+downstream is shared with the JSONC path. The "facts, not code" rule still applies -
+the class body is a declaration, not a place for logic.
+
+The full vocabulary maps 1:1 onto the JSONC syntax:
+
+- Document knobs are properties: `$resource` (defaults to the class name), `$table`,
+  `$timestamps`, `$softDeletes`, `$transformer`, `$factory`, `$nav`.
+- One `Blueprint` method per primitive type (`string`, `text`, `decimal`,
+  `foreignId`, ...) plus the `enum($name, [...])` convenience. Field modifiers mirror
+  the JSON properties: `required()`, `nullable()`, `unique()`, `index()`,
+  `default()`, `max()`, `min()`, `length()`, `precision()`, `scale()`, `values()`,
+  `references()`, `onDelete()` (or `cascadeOnDelete()` etc.), `displayField()`,
+  `label()`, `rules()`, `skipRules()`, `widget()`, `help()`, `placeholder()`,
+  `displayFormat()`.
+- Composite indexes: `$table->index([...])` / `$table->unique([...], name: ...)`.
+- Relationships: `$relations->hasOne(...)`, `hasMany`, `belongsToMany`, `morphMany`,
+  `morphTo`, with `foreignKey()`, `localKey()`, `pivot()`, `morphName()` modifiers.
+- Views: override `views(Views $views)` and call `$views->form(...)`,
+  `$views->table(...)`, `$views->card(...)` with named arguments.
+
+See [`examples/Article.pudo.php`](examples/Article.pudo.php) for a full-surface tour
+(the PHP twin of the annotated JSONC example above) and
+[`examples/Product.pudo.php`](examples/Product.pudo.php) for the PHP twin of
+[`examples/Product.udo.json`](examples/Product.udo.json).
+
+For IDE autocomplete inside a Laravel project, point composer's dev autoload at the
+runtime that ships with udo-gen (the classes are only needed while authoring; nothing
+PUDO-related runs in your app):
+
+```jsonc
+// composer.json
+"autoload-dev": {
+  "psr-4": { "Pudo\\": "node_modules/udo-gen/php/src/" }
+}
+```
+
+---
+
 ## Syntax reference
 
 ### Field types
@@ -322,8 +430,9 @@ see [`skills/udo-author/SKILL.md`](skills/udo-author/SKILL.md).
 ```
 src/         TypeScript source for the CLI and generators
 schema/      JSON Schema for the UDO format (udo-v1.schema.json)
+php/         PUDO runtime (Pudo\* classes) + evaluator for .pudo.php files
 templates/   Eta templates, one per artifact
-examples/    Worked example UDOs
+examples/    Worked example UDOs (both .udo.json and .pudo.php)
 skills/      The udo-author skill (full authoring guide)
 tests/       Vitest suite
 bin/         Shell entry point (udo -> dist/cli.js)

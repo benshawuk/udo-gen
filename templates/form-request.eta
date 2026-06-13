@@ -7,7 +7,7 @@ namespace App\Http\Requests;
 use Illuminate\Foundation\Http\FormRequest;
 
 /**
- * Auto-generated from udo/<%= it.resource %>.udo.json by udo-gen.
+ * Auto-generated from the <%= it.resource %> UDO by udo-gen.
  *
  * DO NOT EDIT. To add cross-field rules, async checks, or custom messages,
  * add them via the UDO's `validation.backend` array, or use a Request

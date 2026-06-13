@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Factories\Factory;
 /**
  * @extends Factory<<%= it.resource %>>
  *
- * Auto-generated from udo/<%= it.resource %>.udo.json by udo-gen.
+ * Auto-generated from the <%= it.resource %> UDO by udo-gen.
  * Override defaults at the call site (e.g. ::factory()->state(['code' => '1234'])).
  */
 class <%= it.resource %>Factory extends Factory

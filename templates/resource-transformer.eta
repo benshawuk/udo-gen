@@ -8,7 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
- * Auto-generated from udo/<%= it.resource %>.udo.json by udo-gen.
+ * Auto-generated from the <%= it.resource %> UDO by udo-gen.
  *
  * DO NOT EDIT. Set `transformer: "custom"` in the UDO if you need to write
  * your own.

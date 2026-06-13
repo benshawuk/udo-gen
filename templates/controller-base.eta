@@ -14,7 +14,7 @@ use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 /**
  * DO NOT EDIT.
  *
- * Auto-generated from udo/<%= it.resource %>.udo.json by udo-gen.
+ * Auto-generated from the <%= it.resource %> UDO by udo-gen.
  * Edits will be overwritten on the next `pnpm udo gen`.
  *
  * To add custom endpoints or change CRUD behavior, edit

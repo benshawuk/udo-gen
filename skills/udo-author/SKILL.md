@@ -26,12 +26,23 @@ description: Author Unified Data Object (UDO) files that drive code generation f
 
 5. **Idempotent + safe.** Running `udo gen` twice is a no-op (scaffolds preserved, migrations not duplicated). Running `udo migrate` after a UDO edit produces an additive ALTER migration. Renames and type changes are flagged for manual review, not silently mutated.
 
+## Two authoring formats
+
+The examples in this skill use JSONC (`Product.udo.json`), but every UDO can
+equivalently be written as a PUDO (`Product.pudo.php`) - a Laravel-style PHP class
+extending `Pudo\Resource` whose `fields(Blueprint $table)` method reads like a
+migration. Both formats serialize to the identical UDO v1 document, validate against
+the same schema, and are accepted by every `udo` command. All five rules above apply
+unchanged - a PUDO is still facts-only, never logic. See the "PUDO" section of the
+udo-gen README and `examples/Article.pudo.php` for the full PHP vocabulary. When
+authoring for a user, match whichever format their project already uses.
+
 ## File layout
 
 ```
 <laravel-root>/
   udo/
-    Product.udo.json              ← source of truth, JSONC
+    Product.udo.json              ← source of truth (JSONC, or Product.pudo.php)
     .snapshots/
       Product.snapshot.json       ← managed by udo-gen, do not edit
   app/

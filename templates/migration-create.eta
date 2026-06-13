@@ -7,7 +7,7 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * Auto-generated from udo/<%= it.resource %>.udo.json by udo-gen.
+ * Auto-generated from the <%= it.resource %> UDO by udo-gen.
  *
  * This is the initial create migration. Subsequent UDO changes should be
  * emitted as separate ALTER migrations via `udo migrate <%= it.resource %>`.

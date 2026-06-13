@@ -11,7 +11,7 @@ use App\Models\Generated\<%= it.resource %>Base;
  *
  * Scaffold-once: this file is yours forever. udo-gen will never overwrite
  * it on subsequent runs. To change auto-derived state ($fillable, $casts,
- * $table, soft-deletes, timestamps), edit udo/<%= it.resource %>.udo.json.
+ * $table, soft-deletes, timestamps), edit the <%= it.resource %> UDO file.
  *
  * Add scopes, accessors, mutators, relationship method bodies, and any
  * other application code here. Override base-class relationship methods

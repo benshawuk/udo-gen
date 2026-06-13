@@ -7,7 +7,7 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * Auto-generated ALTER migration from udo/<%= it.resource %>.udo.json diff by udo-gen.
+ * Auto-generated ALTER migration from the <%= it.resource %> UDO diff by udo-gen.
  *
  * Only added/dropped columns are emitted automatically. Type and constraint
  * changes are flagged as warnings — fill those in by hand before running.

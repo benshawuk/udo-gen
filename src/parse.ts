@@ -1,4 +1,5 @@
 import { readFileSync } from 'node:fs';
+import { spawnSync } from 'node:child_process';
 import { resolve, dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parse as parseJsonc, printParseErrorCode, type ParseError } from 'jsonc-parser';
@@ -8,6 +9,7 @@ import type { UdoDocument } from './types.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const SCHEMA_PATH = resolve(here, '..', 'schema', 'udo-v1.schema.json');
+const PUDO_EVAL_PATH = resolve(here, '..', 'php', 'eval-pudo.php');
 
 export interface ParseSuccess {
   ok: true;
@@ -18,7 +20,7 @@ export interface ParseSuccess {
 export interface ParseFailure {
   ok: false;
   filePath: string;
-  stage: 'read' | 'jsonc' | 'schema';
+  stage: 'read' | 'jsonc' | 'php' | 'schema';
   errors: string[];
 }
 
@@ -65,7 +67,70 @@ function lineColumnAt(source: string, offset: number): { line: number; column: n
   return { line, column: offset - lastNewline };
 }
 
+/**
+ * Parses a master file in either format: .udo.json (JSONC) or .pudo.php
+ * (a PHP class extending Pudo\Resource). Both validate against the same
+ * v1 schema and yield the same document, so generators never know the
+ * difference.
+ */
 export function parseUdoFile(filePath: string): ParseResult {
+  if (filePath.endsWith('.php')) {
+    return parsePudoFile(filePath);
+  }
+  return parseJsoncUdoFile(filePath);
+}
+
+function parsePudoFile(filePath: string): ParseResult {
+  const absolute = resolve(filePath);
+
+  const result = spawnSync('php', [PUDO_EVAL_PATH, absolute], {
+    encoding: 'utf8',
+    maxBuffer: 16 * 1024 * 1024,
+  });
+
+  if (result.error) {
+    const isMissingPhp = (result.error as NodeJS.ErrnoException).code === 'ENOENT';
+    return {
+      ok: false,
+      filePath: absolute,
+      stage: 'php',
+      errors: [
+        isMissingPhp
+          ? `'php' binary not found on PATH. PUDO files (.pudo.php) need a PHP 8.1+ CLI to evaluate.`
+          : result.error.message,
+      ],
+    };
+  }
+
+  if (result.status !== 0) {
+    const lines = `${result.stderr ?? ''}\n${result.stdout ?? ''}`
+      .split('\n')
+      .map((l) => l.trim())
+      .filter(Boolean);
+    return {
+      ok: false,
+      filePath: absolute,
+      stage: 'php',
+      errors: lines.length > 0 ? lines : [`php exited with code ${result.status}`],
+    };
+  }
+
+  let document: unknown;
+  try {
+    document = JSON.parse(result.stdout);
+  } catch {
+    return {
+      ok: false,
+      filePath: absolute,
+      stage: 'php',
+      errors: ['PUDO evaluator did not produce valid JSON.', result.stdout.slice(0, 500)],
+    };
+  }
+
+  return validateDocument(absolute, document);
+}
+
+function parseJsoncUdoFile(filePath: string): ParseResult {
   const absolute = resolve(filePath);
 
   let source: string;
@@ -92,6 +157,10 @@ export function parseUdoFile(filePath: string): ParseResult {
     };
   }
 
+  return validateDocument(absolute, document);
+}
+
+function validateDocument(absolute: string, document: unknown): ParseResult {
   const validate = getValidator();
   if (!validate(document)) {
     return {

@@ -20,10 +20,15 @@ Master task list. Near-term goal: open-source the repo on GitHub.
 - [ ] Formalize the adapter interface so a target stack is a registered, pluggable
       set of `render*(doc)` modules + templates rather than hard-wired imports in
       `src/generate/index.ts`.
-- [ ] Add a `--target` (or config) selector so `udo gen` can emit for a chosen
-      stack instead of always Laravel + React.
+- [x] Add a `--target` (or config) selector so `udo gen` can emit for a chosen
+      stack instead of always Laravel + React. Done for the frontend:
+      `udo gen <path> --target react|autoform` (default `react`). The `autoform`
+      target emits `{feature}/validation/generated.ts` (regen) +
+      `autoform-config.ts` (scaffold-once) instead of the ResourcePage scaffold;
+      see `src/generate/autoform.ts`.
 - [ ] Prove agnosticism with a second adapter set (e.g. Django/DRF backend or a
-      Vue/Svelte frontend) against the unchanged schema.
+      Vue/Svelte frontend) against the unchanged schema. (`autoform` is the first
+      proof on the frontend side.)
 - [ ] Document "writing your own adapter" once the interface is stable.
 
 ## Generator / CLI

@@ -8,13 +8,14 @@ import { renderModelExtension } from './generate/model-extension.js';
 import { renderMigration } from './generate/migration.js';
 import { renderFormRequest } from './generate/form-request.js';
 import { renderTsModule } from './generate/ts-module.js';
+import { renderAutoformGenerated, renderAutoformConfig } from './generate/autoform.js';
 import { renderTransformer } from './generate/resource-transformer.js';
 import { renderFactory } from './generate/factory.js';
 import {
   renderControllerBase,
   renderControllerExtension,
 } from './generate/controller-base.js';
-import { planAndGenerate, type PlannedAction } from './generate/index.js';
+import { planAndGenerate, type PlannedAction, type FrontendTarget } from './generate/index.js';
 import { diffUdo, renderAlterMigration } from './generate/migration-alter.js';
 import { readSnapshot, writeSnapshot } from './generate/snapshot.js';
 import { relative, join, dirname } from 'node:path';
@@ -29,7 +30,7 @@ program
 
 program
   .command('validate <path>')
-  .description('Parse a UDO file (JSONC) and validate against the v1 schema.')
+  .description('Parse a UDO file (.udo.json JSONC or .pudo.php PHP class) and validate against the v1 schema.')
   .action((path: string) => {
     const result = parseUdoFile(path);
 
@@ -90,6 +91,14 @@ program
         process.stdout.write(output);
         break;
       }
+      case 'autoform-generated': {
+        process.stdout.write(renderAutoformGenerated(result.document));
+        break;
+      }
+      case 'autoform-config': {
+        process.stdout.write(renderAutoformConfig(result.document));
+        break;
+      }
       case 'transformer': {
         const output = await renderTransformer(result.document);
         process.stdout.write(output);
@@ -112,7 +121,7 @@ program
       }
       default:
         console.error(
-          `${kleur.red('✗')} Unknown artifact '${options.artifact}'. Known: model-base, model-extension, migration, form-request, ts-module, transformer, factory, controller-base, controller-extension`,
+          `${kleur.red('✗')} Unknown artifact '${options.artifact}'. Known: model-base, model-extension, migration, form-request, ts-module, autoform-generated, autoform-config, transformer, factory, controller-base, controller-extension`,
         );
         process.exit(2);
     }
@@ -124,7 +133,12 @@ program
   .option('-o, --out <dir>', 'Laravel project root (defaults to cwd)', process.cwd())
   .option('--dry-run', 'Print the plan without writing files', false)
   .option('--force', 'Overwrite scaffold-once files (Model.php, Controller.php)', false)
-  .action(async (path: string, options: { out: string; dryRun: boolean; force: boolean }) => {
+  .option('--target <target>', 'Frontend target: react (default) or autoform', 'react')
+  .action(
+    async (
+      path: string,
+      options: { out: string; dryRun: boolean; force: boolean; target: string },
+    ) => {
     const result = parseUdoFile(path);
     if (!result.ok) {
       console.error(`${kleur.red('✗')} UDO is invalid; fix errors before generating.`);
@@ -132,10 +146,20 @@ program
       process.exit(1);
     }
 
+    const VALID_TARGETS: FrontendTarget[] = ['react', 'autoform'];
+    if (!VALID_TARGETS.includes(options.target as FrontendTarget)) {
+      console.error(
+        `${kleur.red('✗')} Unknown --target '${options.target}'. Known: ${VALID_TARGETS.join(', ')}`,
+      );
+      process.exit(2);
+    }
+    const target = options.target as FrontendTarget;
+
     const plan = await planAndGenerate(result.document, {
       out: options.out,
       dryRun: options.dryRun,
       force: options.force,
+      target,
     });
 
     const header = options.dryRun

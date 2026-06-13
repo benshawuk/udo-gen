@@ -9,6 +9,7 @@ import { renderTransformer } from './resource-transformer.js';
 import { renderFactory } from './factory.js';
 import { renderControllerBase, renderControllerExtension } from './controller-base.js';
 import { renderTsModule } from './ts-module.js';
+import { renderAutoformGenerated, renderAutoformConfig } from './autoform.js';
 import { injectRoutes, loadRoutesFile } from './routes.js';
 import { renderLangStarter } from './lang-starter.js';
 import { buildManifest } from './manifest.js';
@@ -21,6 +22,14 @@ import { writeSnapshot } from './snapshot.js';
 import { defaultTable } from '../utils/naming.js';
 
 export type WriteMode = 'regenerate' | 'scaffold-once' | 'create-once-by-pattern';
+
+/**
+ * Frontend target adapter. The backend artifacts are identical across targets;
+ * only the React-side output differs.
+ *  - 'react'    (default): Zod TS module + a ResourcePage scaffold (udo-gen's own runtime).
+ *  - 'autoform': Zod TS module + autoform `generated.ts` (regen) + `autoform-config.ts` (scaffold-once).
+ */
+export type FrontendTarget = 'react' | 'autoform';
 export type ActionKind =
   | 'WRITE'
   | 'SKIP-EXISTS'
@@ -46,6 +55,8 @@ export interface GenOptions {
   dryRun?: boolean;
   /** Used to make migration filenames deterministic in tests. */
   now?: () => Date;
+  /** Frontend target adapter. Defaults to 'react'. */
+  target?: FrontendTarget;
 }
 
 function migrationTimestamp(now: Date): string {
@@ -223,7 +234,9 @@ export async function planAndGenerate(
     );
   }
 
-  // --- TS UDO module (always regenerated) ---
+  const target: FrontendTarget = options.target ?? 'react';
+
+  // --- TS UDO module (always regenerated; shared by both frontend targets) ---
   await emitRegen(
     plan,
     'ts-module',
@@ -232,27 +245,50 @@ export async function planAndGenerate(
     dryRun,
   );
 
-  // --- React page scaffold (per-resource, scaffold-once) ---
-  {
-    const { featureDir, filename } = scaffoldPagePath(doc);
-    await emitScaffold(
+  if (target === 'react') {
+    // --- React page scaffold (per-resource, scaffold-once) ---
+    {
+      const { featureDir, filename } = scaffoldPagePath(doc);
+      await emitScaffold(
+        plan,
+        'react-page',
+        join(root, 'resources/js/features', featureDir, filename),
+        await renderScaffoldPage(doc),
+        force,
+        dryRun,
+      );
+    }
+
+    // --- ResourcePage runtime helper (one-time install per project) ---
+    {
+      const runtimePath = join(root, 'resources/js/lib/udo-ui/resource-page.tsx');
+      await emitScaffold(
+        plan,
+        'resource-page-runtime',
+        runtimePath,
+        await renderResourcePageRuntime(),
+        force,
+        dryRun,
+      );
+    }
+  } else if (target === 'autoform') {
+    // --- autoform target: validation (regen) + feature config (scaffold-once) ---
+    const { featureDir } = scaffoldPagePath(doc);
+    const validationDir = join(root, 'resources/js/features', featureDir, 'validation');
+
+    await emitRegen(
       plan,
-      'react-page',
-      join(root, 'resources/js/features', featureDir, filename),
-      await renderScaffoldPage(doc),
-      force,
+      'autoform-generated',
+      join(validationDir, 'generated.ts'),
+      renderAutoformGenerated(doc),
       dryRun,
     );
-  }
 
-  // --- ResourcePage runtime helper (one-time install per project) ---
-  {
-    const runtimePath = join(root, 'resources/js/lib/udo-ui/resource-page.tsx');
     await emitScaffold(
       plan,
-      'resource-page-runtime',
-      runtimePath,
-      await renderResourcePageRuntime(),
+      'autoform-config',
+      join(validationDir, 'autoform-config.ts'),
+      renderAutoformConfig(doc),
       force,
       dryRun,
     );

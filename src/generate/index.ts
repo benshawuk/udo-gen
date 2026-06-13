@@ -57,6 +57,12 @@ export interface GenOptions {
   now?: () => Date;
   /** Frontend target adapter. Defaults to 'react'. */
   target?: FrontendTarget;
+  /**
+   * Root dir (relative to the project root) where frontend files are written.
+   * Defaults to 'resources/js'. Set this to match your stack's layout, e.g.
+   * 'frontend' or 'src'.
+   */
+  frontendRoot?: string;
 }
 
 function migrationTimestamp(now: Date): string {
@@ -235,12 +241,13 @@ export async function planAndGenerate(
   }
 
   const target: FrontendTarget = options.target ?? 'react';
+  const frontendRoot = options.frontendRoot ?? 'resources/js';
 
   // --- TS UDO module (always regenerated; shared by both frontend targets) ---
   await emitRegen(
     plan,
     'ts-module',
-    join(root, 'resources/js/udo', `${resource}.ts`),
+    join(root, frontendRoot, 'udo', `${resource}.ts`),
     await renderTsModule(doc),
     dryRun,
   );
@@ -252,7 +259,7 @@ export async function planAndGenerate(
       await emitScaffold(
         plan,
         'react-page',
-        join(root, 'resources/js/features', featureDir, filename),
+        join(root, frontendRoot, 'features', featureDir, filename),
         await renderScaffoldPage(doc),
         force,
         dryRun,
@@ -261,7 +268,7 @@ export async function planAndGenerate(
 
     // --- ResourcePage runtime helper (one-time install per project) ---
     {
-      const runtimePath = join(root, 'resources/js/lib/udo-ui/resource-page.tsx');
+      const runtimePath = join(root, frontendRoot, 'lib/udo-ui/resource-page.tsx');
       await emitScaffold(
         plan,
         'resource-page-runtime',
@@ -274,7 +281,7 @@ export async function planAndGenerate(
   } else if (target === 'autoform') {
     // --- autoform target: validation (regen) + feature config (scaffold-once) ---
     const { featureDir } = scaffoldPagePath(doc);
-    const validationDir = join(root, 'resources/js/features', featureDir, 'validation');
+    const validationDir = join(root, frontendRoot, 'features', featureDir, 'validation');
 
     await emitRegen(
       plan,
@@ -296,7 +303,7 @@ export async function planAndGenerate(
 
   // --- Multi-resource manifest (regenerated from the output dir contents) ---
   {
-    const udoDir = join(root, 'resources/js/udo');
+    const udoDir = join(root, frontendRoot, 'udo');
     const manifestPath = join(udoDir, 'index.ts');
     const contents = buildManifest(udoDir);
     writeIfNeeded(manifestPath, contents, dryRun);

@@ -134,10 +134,21 @@ program
   .option('--dry-run', 'Print the plan without writing files', false)
   .option('--force', 'Overwrite scaffold-once files (Model.php, Controller.php)', false)
   .option('--target <target>', 'Frontend target: react (default) or autoform', 'react')
+  .option(
+    '--frontend-root <dir>',
+    "Root dir for frontend files, relative to project root (e.g. 'frontend', 'src')",
+    'resources/js',
+  )
   .action(
     async (
       path: string,
-      options: { out: string; dryRun: boolean; force: boolean; target: string },
+      options: {
+        out: string;
+        dryRun: boolean;
+        force: boolean;
+        target: string;
+        frontendRoot: string;
+      },
     ) => {
     const result = parseUdoFile(path);
     if (!result.ok) {
@@ -160,6 +171,7 @@ program
       dryRun: options.dryRun,
       force: options.force,
       target,
+      frontendRoot: options.frontendRoot,
     });
 
     const header = options.dryRun

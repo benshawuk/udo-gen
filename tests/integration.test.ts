@@ -92,4 +92,45 @@ describe('integration: planAndGenerate', () => {
     expect(existsSync(join(out, 'app/Models/Product.php'))).toBe(false);
     expect(existsSync(join(out, 'database/migrations'))).toBe(false);
   });
+
+  it('target=autoform emits validation files and no react-page/runtime', async () => {
+    const parsed = parseUdoFile(join(examplesDir, 'Product.udo.json'));
+    if (!parsed.ok) return;
+
+    const out = tmpRoot();
+    await planAndGenerate(parsed.document, {
+      out,
+      target: 'autoform',
+      now: () => new Date('2026-01-01T12:00:00Z'),
+    });
+
+    // autoform validation files written
+    expect(existsSync(join(out, 'resources/js/features/products/validation/generated.ts'))).toBe(true);
+    expect(existsSync(join(out, 'resources/js/features/products/validation/autoform-config.ts'))).toBe(true);
+    // react-target frontend files NOT written
+    expect(existsSync(join(out, 'resources/js/features/products/product-page.tsx'))).toBe(false);
+    expect(existsSync(join(out, 'resources/js/lib/udo-ui/resource-page.tsx'))).toBe(false);
+    // backend artifacts still present (shared across targets)
+    expect(existsSync(join(out, 'app/Models/Product.php'))).toBe(true);
+  });
+
+  it('frontendRoot relocates all frontend files (and leaves backend untouched)', async () => {
+    const parsed = parseUdoFile(join(examplesDir, 'Product.udo.json'));
+    if (!parsed.ok) return;
+
+    const out = tmpRoot();
+    await planAndGenerate(parsed.document, {
+      out,
+      target: 'autoform',
+      frontendRoot: 'frontend',
+      now: () => new Date('2026-01-01T12:00:00Z'),
+    });
+
+    expect(existsSync(join(out, 'frontend/udo/Product.ts'))).toBe(true);
+    expect(existsSync(join(out, 'frontend/features/products/validation/autoform-config.ts'))).toBe(true);
+    // nothing written under the default resources/js root
+    expect(existsSync(join(out, 'resources/js'))).toBe(false);
+    // backend path unaffected by frontendRoot
+    expect(existsSync(join(out, 'app/Models/Product.php'))).toBe(true);
+  });
 });

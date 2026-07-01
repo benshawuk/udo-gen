@@ -119,6 +119,31 @@ describe('parseUdoFile with .pudo.php', () => {
     });
   });
 
+  conditional('serializes transformer / request / factory opt-outs', () => {
+    const path = tmpPudo(`<?php
+use Pudo\\Blueprint;
+use Pudo\\Resource;
+
+class Widget extends Resource
+{
+    protected string $transformer = 'custom';
+    protected string $request = 'custom';
+    protected string|false $factory = false;
+
+    public function fields(Blueprint $table): void
+    {
+        $table->string('name');
+    }
+}
+`);
+    const result = parseUdoFile(path);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.document.transformer).toBe('custom');
+    expect(result.document.request).toBe('custom');
+    expect(result.document.factory).toBe(false);
+  });
+
   conditional('accepts a minimal class with resource name from the class name', () => {
     const path = tmpPudo(`<?php
 use Pudo\\Blueprint;

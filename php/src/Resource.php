@@ -40,6 +40,9 @@ abstract class Resource
     /** 'auto' generates the API Resource; 'custom' means you write it. */
     protected string $transformer = 'auto';
 
+    /** 'auto' generates the FormRequest; 'custom' means you write it. */
+    protected string $request = 'auto';
+
     /** 'auto' emits a factory; false skips it. */
     protected string|false $factory = 'auto';
 
@@ -94,6 +97,7 @@ abstract class Resource
         }
 
         if ($this->transformer !== 'auto') $doc['transformer'] = $this->transformer;
+        if ($this->request !== 'auto') $doc['request'] = $this->request;
         if ($this->factory !== 'auto') $doc['factory'] = false;
         if ($this->nav !== null) $doc['nav'] = $this->nav;
 

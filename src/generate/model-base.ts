@@ -23,6 +23,8 @@ interface RelationMethod {
 }
 
 function castFor(name: string, field: UdoField): CastRow | null {
+  // Explicit override wins (e.g. 'hashed', 'encrypted', 'encrypted:array').
+  if (field.cast) return { field: name, cast: field.cast };
   switch (field.type) {
     case 'date':
       return { field: name, cast: 'date' };
@@ -126,6 +128,8 @@ export interface ModelBaseContext {
   softDeletes: boolean;
   hasFactory: boolean;
   fillable: string[];
+  hidden: string[];
+  appends: string[];
   casts: CastRow[];
   relations: RelationMethod[];
   uniqueRelationImports: string[];
@@ -133,13 +137,17 @@ export interface ModelBaseContext {
 
 export function buildModelBaseContext(doc: UdoDocument): ModelBaseContext {
   const fillable: string[] = [];
+  const hidden: string[] = [];
   const casts: CastRow[] = [];
 
   for (const [name, field] of Object.entries(doc.fields)) {
     fillable.push(name);
+    if (field.hidden) hidden.push(name);
     const cast = castFor(name, field);
     if (cast) casts.push(cast);
   }
+
+  const appends = Object.keys(doc.appends ?? {});
 
   const relations = buildRelationMethods(doc);
   const uniqueRelationImports = Array.from(new Set(relations.map((r) => r.returnType))).sort();
@@ -151,6 +159,8 @@ export function buildModelBaseContext(doc: UdoDocument): ModelBaseContext {
     softDeletes: doc.softDeletes ?? false,
     hasFactory: (doc.factory ?? 'auto') !== false,
     fillable,
+    hidden,
+    appends,
     casts,
     relations,
     uniqueRelationImports,

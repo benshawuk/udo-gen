@@ -42,7 +42,21 @@ abstract class <%= it.resource %>Base extends Model
 <% it.fillable.forEach(function (f) { %>        '<%= f %>',
 <% }) %>    ];
 
-<% if (it.casts.length > 0) { %>    /**
+<% if (it.hidden.length > 0) { %>    /**
+     * @var list<string>
+     */
+    protected $hidden = [
+<% it.hidden.forEach(function (f) { %>        '<%= f %>',
+<% }) %>    ];
+
+<% } %><% if (it.appends.length > 0) { %>    /**
+     * @var list<string>
+     */
+    protected $appends = [
+<% it.appends.forEach(function (a) { %>        '<%= a %>',
+<% }) %>    ];
+
+<% } %><% if (it.casts.length > 0) { %>    /**
      * @var array<string, string>
      */
     protected $casts = [

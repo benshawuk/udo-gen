@@ -114,6 +114,22 @@
       },
       "additionalProperties": false
     },
+    "appends": {
+      "type": "object",
+      "description": "Computed accessor attributes appended to serialization (Laravel $appends). The accessor bodies live in the model extension (App\\Models\\{Resource}); declare their read-only type here so it flows to the API Resource and the frontend Shape.",
+      "patternProperties": {
+        "^[a-z][a-z0-9_]*$": {
+          "type": "object",
+          "required": ["type"],
+          "additionalProperties": false,
+          "properties": {
+            "type": { "$ref": "#/$defs/primitiveType" },
+            "nullable": { "type": "boolean", "default": false }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
     "views": {
       "type": "object",
       "description": "Optional UI structure for form/table/card views. All optional with sensible defaults.",
@@ -205,6 +221,15 @@
         "label": {
           "type": "string",
           "description": "Translation key override. If omitted, convention is '{resource}.fields.{field_name}'."
+        },
+        "hidden": {
+          "type": "boolean",
+          "default": false,
+          "description": "Exclude this attribute from API serialization (Laravel $hidden). Dropped from the generated read Shape, but still writable on create/update (e.g. password)."
+        },
+        "cast": {
+          "type": "string",
+          "description": "Override the inferred Eloquent cast, e.g. 'hashed', 'encrypted', 'encrypted:array'. Takes precedence over the type-derived cast."
         },
         "validation": {
           "type": "object",

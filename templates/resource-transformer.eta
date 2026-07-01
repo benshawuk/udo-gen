@@ -23,6 +23,7 @@ class <%= it.resource %>Resource extends JsonResource
         return [
             'id' => $this->id,
 <% it.fieldKeys.forEach(function (k) { %>            '<%= k %>' => $this-><%= k %>,
+<% }) %><% it.appendKeys.forEach(function (a) { %>            '<%= a %>' => $this-><%= a %>,
 <% }) %><% if (it.timestamps) { %>            'created_at' => $this->created_at?->toISOString(),
             'updated_at' => $this->updated_at?->toISOString(),
 <% } %><% if (it.relations.length > 0) { %>

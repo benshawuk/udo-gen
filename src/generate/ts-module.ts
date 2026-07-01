@@ -168,6 +168,10 @@ export interface TsModuleContext {
   queryKey: string;
   labelKey: string;
   fields: TsField[];
+  /** Fields that appear in the read Shape (all fields minus hidden ones). */
+  shapeFields: { name: string; shapeType: string }[];
+  /** Computed accessors ($appends) — read-only, serialized, not writable. */
+  appends: { name: string; shapeType: string }[];
   fieldsMetadata: { name: string; meta: string }[];
   timestamps: boolean;
 }
@@ -203,6 +207,14 @@ export function buildTsModuleContext(doc: UdoDocument): TsModuleContext {
     name,
     meta: fieldMetadataExpr(field),
   }));
+  // Read Shape = serialized fields (drop hidden) + computed appends.
+  const shapeFields = Object.entries(doc.fields)
+    .filter(([, field]) => !field.hidden)
+    .map(([name, field]) => ({ name, shapeType: tsType(field) }));
+  const appends = Object.entries(doc.appends ?? {}).map(([name, spec]) => ({
+    name,
+    shapeType: tsType({ type: spec.type, nullable: spec.nullable } as UdoField),
+  }));
   return {
     resource: doc.resource,
     table,
@@ -210,6 +222,8 @@ export function buildTsModuleContext(doc: UdoDocument): TsModuleContext {
     queryKey: queryKeyFromTable(table),
     labelKey: table,
     fields,
+    shapeFields,
+    appends,
     fieldsMetadata,
     timestamps: doc.timestamps ?? true,
   };

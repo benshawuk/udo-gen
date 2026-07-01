@@ -18,6 +18,7 @@ interface RelationRow {
 export interface TransformerContext {
   resource: string;
   fieldKeys: string[];
+  appendKeys: string[];
   timestamps: boolean;
   relations: RelationRow[];
 }
@@ -71,7 +72,13 @@ function relationsFor(doc: UdoDocument): RelationRow[] {
 export function buildTransformerContext(doc: UdoDocument): TransformerContext {
   return {
     resource: doc.resource,
-    fieldKeys: Object.keys(doc.fields),
+    // Hidden fields are omitted from the API response (Laravel $hidden would
+    // redact them anyway; leaving them out keeps the transformer honest).
+    fieldKeys: Object.entries(doc.fields)
+      .filter(([, field]) => !field.hidden)
+      .map(([name]) => name),
+    // Computed accessors are serialized read-only attributes.
+    appendKeys: Object.keys(doc.appends ?? {}),
     timestamps: doc.timestamps ?? true,
     relations: relationsFor(doc),
   };

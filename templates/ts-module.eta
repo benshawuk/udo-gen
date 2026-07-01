@@ -25,7 +25,8 @@ export type Update = z.infer<typeof updateSchema>;
 /** Full record shape returned by the API. */
 export type Shape = {
   id: number;
-<% it.fields.forEach(function (f) { %>  <%= f.name %>: <%= f.shapeType %>;
+<% it.shapeFields.forEach(function (f) { %>  <%= f.name %>: <%= f.shapeType %>;
+<% }) %><% it.appends.forEach(function (a) { %>  <%= a.name %>: <%= a.shapeType %>;
 <% }) %><% if (it.timestamps) { %>  created_at: string;
   updated_at: string;
 <% } %>};

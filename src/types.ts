@@ -56,6 +56,10 @@ export interface UdoField {
   onDelete?: 'cascade' | 'restrict' | 'set null' | 'no action';
   displayField?: string;
   label?: string;
+  /** Exclude from API serialization (Laravel $hidden) + the read Shape. Still writable. */
+  hidden?: boolean;
+  /** Override the inferred Eloquent cast, e.g. 'hashed', 'encrypted', 'encrypted:array'. */
+  cast?: string;
   validation?: {
     backend?: string[];
     frontend?: string[];
@@ -133,6 +137,12 @@ export interface UdoDocument {
   nav?: UdoNav;
   fields: Record<string, UdoField>;
   relationships?: Record<string, UdoRelationship>;
+  /**
+   * Computed accessor attributes appended to serialization (Laravel $appends).
+   * Accessor bodies live in the model extension; the declared read-only type
+   * flows to the API Resource and the frontend Shape.
+   */
+  appends?: Record<string, { type: PrimitiveType; nullable?: boolean }>;
   views?: {
     form?: UdoFormView;
     table?: UdoTableView;

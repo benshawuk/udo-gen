@@ -60,7 +60,9 @@ function baseZodExpression(field: UdoField): string {
         expr += '.uuid()';
         break;
       case 'ipAddress':
-        expr += '.ip()';
+        // zod v4 removed z.string().ip(); a regex keeps the chain a ZodString
+        // and works on both v3 and v4
+        expr += ".regex(/^((\\d{1,3}\\.){3}\\d{1,3}|[0-9a-fA-F:]+)$/, 'Invalid IP address')";
         break;
       case 'slug':
         expr += ".regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, 'Must be kebab-case')";

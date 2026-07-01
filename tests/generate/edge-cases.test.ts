@@ -116,7 +116,7 @@ describe('format combinations', () => {
     { format: 'email', type: 'string', expectInZod: '.email()' },
     { format: 'url', type: 'string', expectInZod: '.url()' },
     { format: 'uuid', type: 'string', expectInZod: '.uuid()' },
-    { format: 'ipAddress', type: 'string', expectInZod: '.ip()' },
+    { format: 'ipAddress', type: 'string', expectInZod: '.regex(' },
     { format: 'slug', type: 'string', expectInZod: '.regex(' },
   ];
 

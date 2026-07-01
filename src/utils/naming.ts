@@ -71,14 +71,17 @@ export function deriveBelongsTo(fieldName: string, references?: string): {
   model: string;
 } | null {
   if (!fieldName.endsWith('_id')) return null;
-  const relationName = fieldName.slice(0, -3); // 'category_id' -> 'category'
+  // 'category_id' -> 'category', 'storage_connection_id' -> 'storageConnection'
+  // (camelCase, consistent with declared hasMany/belongsToMany relation names)
+  const base = fieldName.slice(0, -3);
+  const relationName = snakeToCamel(base);
 
   let model: string;
   if (references) {
     const table = references.split('.')[0] ?? '';
     model = snakeToPascal(singularize(table));
   } else {
-    model = snakeToPascal(relationName);
+    model = snakeToPascal(base);
   }
 
   return { relationName, model };

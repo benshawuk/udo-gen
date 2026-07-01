@@ -133,6 +133,7 @@ export interface UdoDocument {
   indexes?: UdoIndex[];
   controller?: ControllerConfig;
   transformer?: 'auto' | 'custom';
+  request?: 'auto' | 'custom';
   factory?: 'auto' | false;
   nav?: UdoNav;
   fields: Record<string, UdoField>;

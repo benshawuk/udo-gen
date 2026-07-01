@@ -10,10 +10,11 @@
   "softDeletes": false,
 
   // CRUD controller wouldn't normally apply to verification codes — they're created by an
-  // auth flow, not by the user. Marking controller/transformer as custom so the generator
-  // doesn't scaffold them. We still want the Model base, Migration, and TS types.
+  // auth flow, not by the user. Marking controller/transformer/request as custom so the
+  // generator doesn't scaffold them. We still want the Model base, Migration, and TS types.
   "controller": "custom",
   "transformer": "custom",
+  "request": "custom",
   "factory": "auto",
 
   "fields": {

@@ -40,7 +40,7 @@ describe('integration: planAndGenerate', () => {
     expect(existsSync(join(out, 'udo/.snapshots/Product.snapshot.json'))).toBe(true);
   });
 
-  it('honours custom controller/transformer opt-outs on VerificationCode', async () => {
+  it('honours custom controller/transformer/request opt-outs on VerificationCode', async () => {
     const parsed = parseUdoFile(join(examplesDir, 'VerificationCode.udo.json'));
     expect(parsed.ok).toBe(true);
     if (!parsed.ok) return;
@@ -52,6 +52,9 @@ describe('integration: planAndGenerate', () => {
     expect(skips).toContain('controller-base');
     expect(skips).toContain('controller-extension');
     expect(skips).toContain('transformer');
+    expect(skips).toContain('form-request');
+    // The form-request file must NOT have been written when opted out.
+    expect(existsSync(join(out, 'app/Http/Requests/VerificationCodeRequest.php'))).toBe(false);
   });
 
   it('is idempotent — second run preserves scaffolds and skips migration', async () => {

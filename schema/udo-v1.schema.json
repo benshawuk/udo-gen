@@ -79,6 +79,11 @@
       "enum": ["auto", "custom"],
       "default": "auto"
     },
+    "request": {
+      "description": "How the FormRequest is generated. 'custom' keeps a hand-written request (skip regeneration) when validation carries logic the schema can't express (conditional rules, injected fields, auth).",
+      "enum": ["auto", "custom"],
+      "default": "auto"
+    },
     "factory": {
       "description": "Whether to emit a Laravel factory.",
       "oneOf": [

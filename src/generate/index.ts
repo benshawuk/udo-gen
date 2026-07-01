@@ -104,6 +104,7 @@ export async function planAndGenerate(
 
   const controllerSetting = doc.controller ?? 'auto';
   const transformerSetting = doc.transformer ?? 'auto';
+  const requestSetting = doc.request ?? 'auto';
   const factorySetting = doc.factory ?? 'auto';
 
   // --- Model base (always regenerated) ---
@@ -151,14 +152,23 @@ export async function planAndGenerate(
     }
   }
 
-  // --- Form Request (always regenerated) ---
-  await emitRegen(
-    plan,
-    'form-request',
-    join(root, 'app/Http/Requests', `${resource}Request.php`),
-    await renderFormRequest(doc),
-    dryRun,
-  );
+  // --- Form Request (regenerated unless opted out) ---
+  if (requestSetting === 'custom') {
+    plan.push({
+      artifact: 'form-request',
+      kind: 'SKIP-OPTED-OUT',
+      path: join(root, 'app/Http/Requests', `${resource}Request.php`),
+      reason: 'request: "custom" in UDO',
+    });
+  } else {
+    await emitRegen(
+      plan,
+      'form-request',
+      join(root, 'app/Http/Requests', `${resource}Request.php`),
+      await renderFormRequest(doc),
+      dryRun,
+    );
+  }
 
   // --- Resource transformer ---
   if (transformerSetting === 'custom') {

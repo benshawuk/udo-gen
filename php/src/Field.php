@@ -37,6 +37,7 @@ class Field
     private ?string $placeholder = null;
     private ?string $displayFormat = null;
     private bool $hidden = false;
+    private ?string $cast = null;
 
     public function __construct(string $type)
     {
@@ -230,6 +231,16 @@ class Field
         return $this;
     }
 
+    /**
+     * Override the inferred Eloquent cast, e.g. 'hashed', 'encrypted',
+     * 'encrypted:array'. Takes precedence over the type-derived cast.
+     */
+    public function cast(string $cast): static
+    {
+        $this->cast = $cast;
+        return $this;
+    }
+
     public function toArray(): array
     {
         $out = ['type' => $this->type];
@@ -251,6 +262,7 @@ class Field
         if ($this->displayField !== null) $out['displayField'] = $this->displayField;
         if ($this->label !== null) $out['label'] = $this->label;
         if ($this->hidden) $out['hidden'] = true;
+        if ($this->cast !== null) $out['cast'] = $this->cast;
 
         $validation = [];
         if ($this->backendRules !== []) $validation['backend'] = $this->backendRules;

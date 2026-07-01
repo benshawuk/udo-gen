@@ -360,13 +360,18 @@ the class body is a declaration, not a place for logic.
 The full vocabulary maps 1:1 onto the JSONC syntax:
 
 - Document knobs are properties: `$resource` (defaults to the class name), `$table`,
-  `$timestamps`, `$softDeletes`, `$transformer`, `$factory`, `$nav`.
+  `$timestamps`, `$softDeletes`, `$transformer`, `$request`, `$factory`, `$nav`, and
+  `$appends` (computed accessors: `['has_password' => 'boolean', 'display_name' =>
+  ['type' => 'string', 'nullable' => true]]` — the accessor bodies live in your model
+  extension; the declared type flows to the API Resource and the frontend Shape).
 - One `Blueprint` method per primitive type (`string`, `text`, `decimal`,
   `foreignId`, ...) plus the `enum($name, [...])` convenience. Field modifiers mirror
   the JSON properties: `required()`, `nullable()`, `unique()`, `index()`,
   `default()`, `max()`, `min()`, `length()`, `precision()`, `scale()`, `values()`,
   `references()`, `onDelete()` (or `cascadeOnDelete()` etc.), `displayField()`,
-  `label()`, `rules()`, `skipRules()`, `widget()`, `help()`, `placeholder()`,
+  `label()`, `hidden()` (kept out of API output and the read Shape, still writable —
+  for secrets), `cast()` (override the inferred Eloquent cast, e.g. `'hashed'`,
+  `'encrypted'`), `rules()`, `skipRules()`, `widget()`, `help()`, `placeholder()`,
   `displayFormat()`.
 - Composite indexes: `$table->index([...])` / `$table->unique([...], name: ...)`.
 - Relationships: `$relations->hasOne(...)`, `hasMany`, `belongsToMany`, `morphMany`,

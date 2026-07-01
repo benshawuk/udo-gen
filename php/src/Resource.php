@@ -49,6 +49,20 @@ abstract class Resource
     /** Sidebar hint: ['section' => ..., 'icon' => ..., 'order' => ...]. */
     protected ?array $nav = null;
 
+    /**
+     * Computed accessors appended to serialization (Laravel $appends). The
+     * accessor bodies live in your model extension; declare the read-only type
+     * here so it flows to the API Resource and the frontend Shape.
+     *
+     * String shorthand for the type, or an array for nullable:
+     *
+     *   protected array $appends = [
+     *       'has_password' => 'boolean',
+     *       'display_name' => ['type' => 'string', 'nullable' => true],
+     *   ];
+     */
+    protected array $appends = [];
+
     /** Declare every column, plus composite indexes. */
     abstract public function fields(Blueprint $table): void;
 
@@ -109,6 +123,22 @@ abstract class Resource
 
         $rels = $relations->toArray();
         if ($rels !== []) $doc['relationships'] = $rels;
+
+        if ($this->appends !== []) {
+            $appends = [];
+            foreach ($this->appends as $name => $spec) {
+                if (is_string($spec)) {
+                    $appends[$name] = ['type' => $spec];
+                } elseif (is_array($spec)) {
+                    $appends[$name] = $spec;
+                } else {
+                    throw new \LogicException(
+                        "Append '{$name}' must be a type string or ['type' => ..., 'nullable' => ...] array.",
+                    );
+                }
+            }
+            $doc['appends'] = $appends;
+        }
 
         $indexes = $blueprint->indexesToArray();
         if ($indexes !== []) $doc['indexes'] = $indexes;

@@ -15,21 +15,24 @@ export interface ControllerBaseContext {
   defaultSortColumn: string | null;
   defaultSortDirection: 'asc' | 'desc';
   pageSize: number;
+  ownedBy: string | null;
 }
 
 function controllerKnobs(doc: UdoDocument): {
   eagerLoad: string[];
   defaultSort: string | null;
   pageSize: number;
+  ownedBy: string | null;
 } {
   const controller = doc.controller ?? 'auto';
   if (controller === 'auto' || controller === 'custom') {
-    return { eagerLoad: [], defaultSort: null, pageSize: 25 };
+    return { eagerLoad: [], defaultSort: null, pageSize: 25, ownedBy: null };
   }
   return {
     eagerLoad: controller.eagerLoad ?? [],
     defaultSort: controller.defaultSort ?? null,
     pageSize: controller.pageSize ?? 25,
+    ownedBy: controller.ownedBy ?? null,
   };
 }
 
@@ -54,6 +57,7 @@ export function buildControllerBaseContext(doc: UdoDocument): ControllerBaseCont
     defaultSortColumn,
     defaultSortDirection,
     pageSize: knobs.pageSize,
+    ownedBy: knobs.ownedBy,
   };
 }
 

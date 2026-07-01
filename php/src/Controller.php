@@ -19,6 +19,7 @@ class Controller
     private array $search = [];
     private ?string $defaultSort = null;
     private ?int $pageSize = null;
+    private ?string $ownedBy = null;
 
     public static function auto(): static
     {
@@ -60,6 +61,18 @@ class Controller
         return $this;
     }
 
+    /**
+     * Per-user ownership: the FK column that ties a row to auth()->id().
+     * index() is scoped to the owner, store() forces the column server-side
+     * (and drops it from the FormRequest), and show/update/destroy return
+     * 404 for rows the caller does not own.
+     */
+    public function ownedBy(string $column = 'user_id'): static
+    {
+        $this->ownedBy = $column;
+        return $this;
+    }
+
     public function toArray(): array
     {
         $out = ['mode' => 'auto'];
@@ -68,6 +81,7 @@ class Controller
         if ($this->search !== []) $out['search'] = $this->search;
         if ($this->defaultSort !== null) $out['defaultSort'] = $this->defaultSort;
         if ($this->pageSize !== null) $out['pageSize'] = $this->pageSize;
+        if ($this->ownedBy !== null) $out['ownedBy'] = $this->ownedBy;
         return $out;
     }
 }

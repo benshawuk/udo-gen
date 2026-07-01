@@ -3,6 +3,7 @@ import { fileURLToPath } from 'node:url';
 import { Eta } from 'eta';
 import type { UdoDocument, UdoField, PrimitiveType } from '../types.js';
 import { defaultTable } from '../utils/naming.js';
+import { ownedByColumn } from '../utils/doc.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const templateDir = resolve(here, '..', '..', 'templates');
@@ -197,13 +198,17 @@ function fieldMetadataExpr(field: UdoField): string {
 
 export function buildTsModuleContext(doc: UdoDocument): TsModuleContext {
   const table = doc.table ?? defaultTable(doc.resource);
-  const fields: TsField[] = Object.entries(doc.fields).map(([name, field]) => ({
+  // The ownedBy column is server-managed: readable in the Shape, but never
+  // part of the Create/Update payloads or the form field metadata.
+  const owned = ownedByColumn(doc);
+  const writable = Object.entries(doc.fields).filter(([name]) => name !== owned);
+  const fields: TsField[] = writable.map(([name, field]) => ({
     name,
     zod: withModifiers(baseZodExpression(field), field),
     shapeType: tsType(field),
     isRequired: field.required ?? false,
   }));
-  const fieldsMetadata = Object.entries(doc.fields).map(([name, field]) => ({
+  const fieldsMetadata = writable.map(([name, field]) => ({
     name,
     meta: fieldMetadataExpr(field),
   }));

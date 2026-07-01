@@ -36,6 +36,13 @@ export type ControllerConfig =
       defaultSort?: string;
       search?: string[];
       pageSize?: number;
+      /**
+       * FK column tying each row to auth()->id(). The generated controller
+       * scopes index() to the owner, forces the column on store(), and 404s
+       * show/update/destroy for non-owners. The column is excluded from the
+       * FormRequest and from the TS Create/Update payloads.
+       */
+      ownedBy?: string;
     };
 
 export interface UdoField {

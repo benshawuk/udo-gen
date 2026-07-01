@@ -67,7 +67,11 @@
             "scopes": { "type": "array", "items": { "type": "string" } },
             "defaultSort": { "type": "string" },
             "search": { "type": "array", "items": { "type": "string" } },
-            "pageSize": { "type": "integer", "minimum": 1, "maximum": 200 }
+            "pageSize": { "type": "integer", "minimum": 1, "maximum": 200 },
+            "ownedBy": {
+              "type": "string",
+              "description": "FK column tying each row to the authenticated user. Scopes index, forces the column on store, 404s non-owner access, and excludes the column from the FormRequest and TS write payloads."
+            }
           },
           "required": ["mode"]
         }

@@ -23,6 +23,7 @@
 
 import type { UdoDocument, UdoField, PrimitiveType } from '../types.js';
 import { defaultTable, snakeToCamel, snakeToPascal } from '../utils/naming.js';
+import { ownedByColumn } from '../utils/doc.js';
 
 /** autoform's ComponentType union (src/scripts/utils/field-type-mapper.ts). */
 export type AutoformComponentType =
@@ -219,7 +220,9 @@ export interface AutoformContext {
 
 export function buildAutoformContext(doc: UdoDocument): AutoformContext {
   const table = doc.table ?? defaultTable(doc.resource);
-  const entries = Object.entries(doc.fields);
+  // The ownedBy column is server-managed and never appears in forms.
+  const owned = ownedByColumn(doc);
+  const entries = Object.entries(doc.fields).filter(([name]) => name !== owned);
 
   const clientRules = entries.map(([name, field]) => clientRuleFor(table, name, field));
 

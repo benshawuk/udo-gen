@@ -2,6 +2,7 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Eta } from 'eta';
 import type { UdoDocument, UdoField, PrimitiveType } from '../types.js';
+import { ownedByColumn } from '../utils/doc.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const templateDir = resolve(here, '..', '..', 'templates');
@@ -127,17 +128,22 @@ export interface FormRequestContext {
 }
 
 export function buildFormRequestContext(doc: UdoDocument): FormRequestContext {
-  const rows = Object.entries(doc.fields).map(([name, field]) => {
-    const fr = buildFieldRules(name, field);
-    const lead = field.required
-      ? `$isUpdate ? 'sometimes' : 'required'`
-      : field.nullable
-        ? `'nullable'`
-        : `$isUpdate ? 'sometimes' : 'nullable'`;
-    // Remove duplicates if lead already covers nullable
-    const dedup = fr.rules.filter((r) => r !== 'nullable' || !field.nullable);
-    return { field: name, expression: phpArrayLiteral(dedup, lead) };
-  });
+  // The ownedBy column is server-managed (forced from auth()->id() on store),
+  // so the client is never allowed to supply it.
+  const owned = ownedByColumn(doc);
+  const rows = Object.entries(doc.fields)
+    .filter(([name]) => name !== owned)
+    .map(([name, field]) => {
+      const fr = buildFieldRules(name, field);
+      const lead = field.required
+        ? `$isUpdate ? 'sometimes' : 'required'`
+        : field.nullable
+          ? `'nullable'`
+          : `$isUpdate ? 'sometimes' : 'nullable'`;
+      // Remove duplicates if lead already covers nullable
+      const dedup = fr.rules.filter((r) => r !== 'nullable' || !field.nullable);
+      return { field: name, expression: phpArrayLiteral(dedup, lead) };
+    });
   return { resource: doc.resource, rows };
 }
 

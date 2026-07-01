@@ -26,7 +26,8 @@ abstract class <%= it.resource %>ControllerBase extends Controller
     public function index(): AnonymousResourceCollection
     {
         $query = <%= it.resource %>::query();
-<% if (it.eagerLoad.length > 0) { %>        $query->with([<%= it.eagerLoad.map(function (r) { return "'" + r + "'"; }).join(', ') %>]);
+<% if (it.ownedBy) { %>        $query->where('<%= it.ownedBy %>', auth()->id());
+<% } %><% if (it.eagerLoad.length > 0) { %>        $query->with([<%= it.eagerLoad.map(function (r) { return "'" + r + "'"; }).join(', ') %>]);
 <% } %><% if (it.defaultSortColumn) { %>        $query->orderBy('<%= it.defaultSortColumn %>', '<%= it.defaultSortDirection %>');
 <% } %>
         return <%= it.resource %>Resource::collection($query->paginate(<%= it.pageSize %>));
@@ -34,8 +35,12 @@ abstract class <%= it.resource %>ControllerBase extends Controller
 
     public function store(<%= it.resource %>Request $request): JsonResponse
     {
-        $record = <%= it.resource %>::create($request->validated());
-        $record->refresh();
+<% if (it.ownedBy) { %>        $data = $request->validated();
+        $data['<%= it.ownedBy %>'] = auth()->id();
+
+        $record = <%= it.resource %>::create($data);
+<% } else { %>        $record = <%= it.resource %>::create($request->validated());
+<% } %>        $record->refresh();
 
         return (new <%= it.resource %>Resource($record))
             ->response()
@@ -44,21 +49,36 @@ abstract class <%= it.resource %>ControllerBase extends Controller
 
     public function show(<%= it.resource %> $<%= it.modelVar %>): <%= it.resource %>Resource
     {
-<% if (it.eagerLoad.length > 0) { %>        $<%= it.modelVar %>->load([<%= it.eagerLoad.map(function (r) { return "'" + r + "'"; }).join(', ') %>]);
+<% if (it.ownedBy) { %>        $this->authorizeOwnership($<%= it.modelVar %>);
+
+<% } %><% if (it.eagerLoad.length > 0) { %>        $<%= it.modelVar %>->load([<%= it.eagerLoad.map(function (r) { return "'" + r + "'"; }).join(', ') %>]);
 <% } %>        return new <%= it.resource %>Resource($<%= it.modelVar %>);
     }
 
     public function update(<%= it.resource %>Request $request, <%= it.resource %> $<%= it.modelVar %>): <%= it.resource %>Resource
     {
-        $<%= it.modelVar %>->update($request->validated());
+<% if (it.ownedBy) { %>        $this->authorizeOwnership($<%= it.modelVar %>);
+
+<% } %>        $<%= it.modelVar %>->update($request->validated());
 
         return new <%= it.resource %>Resource($<%= it.modelVar %>->fresh());
     }
 
     public function destroy(<%= it.resource %> $<%= it.modelVar %>): JsonResponse
     {
-        $<%= it.modelVar %>->delete();
+<% if (it.ownedBy) { %>        $this->authorizeOwnership($<%= it.modelVar %>);
+
+<% } %>        $<%= it.modelVar %>->delete();
 
         return response()->json(['message' => '<%= it.resource %> deleted.']);
     }
-}
+<% if (it.ownedBy) { %>
+    /**
+     * 404 (not 403) for rows the caller does not own, so foreign ids are
+     * indistinguishable from missing ones.
+     */
+    protected function authorizeOwnership(<%= it.resource %> $<%= it.modelVar %>): void
+    {
+        abort_if($<%= it.modelVar %>->getAttribute('<%= it.ownedBy %>') !== auth()->id(), 404);
+    }
+<% } %>}

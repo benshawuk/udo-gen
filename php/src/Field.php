@@ -36,6 +36,7 @@ class Field
     private ?string $help = null;
     private ?string $placeholder = null;
     private ?string $displayFormat = null;
+    private bool $hidden = false;
 
     public function __construct(string $type)
     {
@@ -219,6 +220,16 @@ class Field
         return $this;
     }
 
+    /**
+     * Exclude from API serialization (Laravel $hidden) and the read Shape.
+     * Still writable on create/update - use for secrets and password hashes.
+     */
+    public function hidden(bool $hidden = true): static
+    {
+        $this->hidden = $hidden;
+        return $this;
+    }
+
     public function toArray(): array
     {
         $out = ['type' => $this->type];
@@ -239,6 +250,7 @@ class Field
         if ($this->onDelete !== null) $out['onDelete'] = $this->onDelete;
         if ($this->displayField !== null) $out['displayField'] = $this->displayField;
         if ($this->label !== null) $out['label'] = $this->label;
+        if ($this->hidden) $out['hidden'] = true;
 
         $validation = [];
         if ($this->backendRules !== []) $validation['backend'] = $this->backendRules;

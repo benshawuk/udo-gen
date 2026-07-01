@@ -8,6 +8,7 @@ import { renderModelExtension } from './generate/model-extension.js';
 import { renderMigration } from './generate/migration.js';
 import { renderFormRequest } from './generate/form-request.js';
 import { renderTsModule } from './generate/ts-module.js';
+import { renderUrpcRuntime, renderUrpcResource } from './generate/urpc.js';
 import { renderAutoformGenerated, renderAutoformConfig, renderAutoformForm } from './generate/autoform.js';
 import { renderTransformer } from './generate/resource-transformer.js';
 import { renderFactory } from './generate/factory.js';
@@ -91,6 +92,14 @@ program
         process.stdout.write(output);
         break;
       }
+      case 'urpc-runtime': {
+        process.stdout.write(await renderUrpcRuntime());
+        break;
+      }
+      case 'urpc-resource': {
+        process.stdout.write(await renderUrpcResource(result.document));
+        break;
+      }
       case 'autoform-generated': {
         process.stdout.write(renderAutoformGenerated(result.document));
         break;
@@ -125,7 +134,7 @@ program
       }
       default:
         console.error(
-          `${kleur.red('✗')} Unknown artifact '${options.artifact}'. Known: model-base, model-extension, migration, form-request, ts-module, autoform-generated, autoform-config, autoform-form, transformer, factory, controller-base, controller-extension`,
+          `${kleur.red('✗')} Unknown artifact '${options.artifact}'. Known: model-base, model-extension, migration, form-request, ts-module, urpc-runtime, urpc-resource, autoform-generated, autoform-config, autoform-form, transformer, factory, controller-base, controller-extension`,
         );
         process.exit(2);
     }

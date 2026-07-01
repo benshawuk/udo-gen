@@ -1,0 +1,21 @@
+// AUTO-GENERATED from the <%= it.resource %> UDO by udo-gen.
+// DO NOT EDIT. Regenerate with `udo gen <%= it.resource %>`.
+
+import { defineResource } from '@/lib/urpc/client';
+import {
+  endpoint,
+  queryKey,
+  createSchema,
+  updateSchema,
+  type Shape,
+  type Create,
+  type Update,
+} from './<%= it.resource %>';
+
+/** Typed CRUD client for the <%= it.resource %> resource. */
+export const <%= it.camel %> = defineResource<Shape, Create, Update>({
+  endpoint,
+  queryKey,
+  createSchema,
+  updateSchema,
+});

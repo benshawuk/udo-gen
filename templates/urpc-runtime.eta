@@ -1,0 +1,98 @@
+// URPC runtime — installed once by udo-gen (scaffold-once). You own this file.
+// Generated per-resource `*.urpc.ts` clients import ONLY from here, never your
+// HTTP client directly, so they stay portable. Wire configureUrpc() to your
+// app's transport (base URL, auth, CSRF) and unwrap its response envelope.
+import type { z } from 'zod';
+
+export interface UrpcTransport {
+  get<T>(url: string, params?: Record<string, unknown>): Promise<T>;
+  post<T>(url: string, body: unknown): Promise<T>;
+  patch<T>(url: string, body: unknown): Promise<T>;
+  del<T>(url: string): Promise<T>;
+}
+
+function toQuery(params?: Record<string, unknown>): string {
+  if (!params) return '';
+  const usp = new URLSearchParams();
+  for (const [key, value] of Object.entries(params)) {
+    if (value !== undefined && value !== null) usp.set(key, String(value));
+  }
+  const qs = usp.toString();
+  return qs ? `?${qs}` : '';
+}
+
+// Minimal fetch default so the generated clients work with zero wiring. Replace
+// via configureUrpc() to add a base URL, auth headers, CSRF, and to unwrap your
+// API's response envelope (e.g. Laravel's `{ data: ... }`).
+const JSON_HEADERS = { 'Content-Type': 'application/json', Accept: 'application/json' };
+let transport: UrpcTransport = {
+  async get<T>(url: string, params?: Record<string, unknown>): Promise<T> {
+    const res = await fetch(url + toQuery(params), { headers: JSON_HEADERS, credentials: 'include' });
+    return (await res.json()) as T;
+  },
+  async post<T>(url: string, body: unknown): Promise<T> {
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: JSON_HEADERS,
+      credentials: 'include',
+      body: JSON.stringify(body),
+    });
+    return (await res.json()) as T;
+  },
+  async patch<T>(url: string, body: unknown): Promise<T> {
+    const res = await fetch(url, {
+      method: 'PATCH',
+      headers: JSON_HEADERS,
+      credentials: 'include',
+      body: JSON.stringify(body),
+    });
+    return (await res.json()) as T;
+  },
+  async del<T>(url: string): Promise<T> {
+    const res = await fetch(url, { method: 'DELETE', headers: JSON_HEADERS, credentials: 'include' });
+    return (res.status === 204 ? undefined : await res.json()) as T;
+  },
+};
+
+/** Point URPC at your app's HTTP client (auth, CSRF, base URL, envelope unwrap). */
+export function configureUrpc(next: UrpcTransport): void {
+  transport = next;
+}
+
+export interface UrpcResourceConfig<Create, Update> {
+  endpoint: string;
+  queryKey: readonly string[];
+  createSchema?: z.ZodType<Create>;
+  updateSchema?: z.ZodType<Update>;
+}
+
+export interface UrpcResource<Shape, Create, Update> {
+  readonly endpoint: string;
+  readonly queryKey: readonly string[];
+  list(params?: Record<string, unknown>): Promise<Shape[]>;
+  get(id: number | string): Promise<Shape>;
+  create(input: Create): Promise<Shape>;
+  update(id: number | string, input: Update): Promise<Shape>;
+  remove(id: number | string): Promise<void>;
+}
+
+/**
+ * Build a typed CRUD client for one UDO resource. `create`/`update` validate
+ * their input against the UDO's Zod schemas before sending.
+ */
+export function defineResource<Shape, Create, Update>(
+  config: UrpcResourceConfig<Create, Update>,
+): UrpcResource<Shape, Create, Update> {
+  const { endpoint, queryKey, createSchema, updateSchema } = config;
+  return {
+    endpoint,
+    queryKey,
+    list: (params) => transport.get<Shape[]>(endpoint, params),
+    get: (id) => transport.get<Shape>(`${endpoint}/${id}`),
+    create: (input) =>
+      transport.post<Shape>(endpoint, createSchema ? createSchema.parse(input) : input),
+    update: (id, input) =>
+      transport.patch<Shape>(`${endpoint}/${id}`, updateSchema ? updateSchema.parse(input) : input),
+    remove: (id) => transport.del<void>(`${endpoint}/${id}`),
+  };
+}

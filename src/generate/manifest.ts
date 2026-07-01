@@ -12,7 +12,9 @@ export function buildManifest(udoDir: string): string {
   if (!existsSync(udoDir)) return header;
 
   const entries = readdirSync(udoDir)
-    .filter((f) => f.endsWith('.ts') && f !== 'index.ts')
+    // Type modules only: exclude this manifest, the URPC client manifest, and
+    // the per-resource `*.urpc.ts` clients (those go in the separate urpc.ts).
+    .filter((f) => f.endsWith('.ts') && f !== 'index.ts' && f !== 'urpc.ts' && !f.endsWith('.urpc.ts'))
     .map((f) => f.replace(/\.ts$/, ''))
     .sort();
 

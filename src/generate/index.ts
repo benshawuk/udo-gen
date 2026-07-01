@@ -9,6 +9,7 @@ import { renderTransformer } from './resource-transformer.js';
 import { renderFactory } from './factory.js';
 import { renderControllerBase, renderControllerExtension } from './controller-base.js';
 import { renderTsModule } from './ts-module.js';
+import { renderUrpcRuntime, renderUrpcResource, buildUrpcManifest } from './urpc.js';
 import { renderAutoformGenerated, renderAutoformConfig, renderAutoformForm } from './autoform.js';
 import { injectRoutes, loadRoutesFile } from './routes.js';
 import { renderLangStarter } from './lang-starter.js';
@@ -252,6 +253,25 @@ export async function planAndGenerate(
     dryRun,
   );
 
+  // --- URPC runtime (scaffold-once; project owns the transport wiring) ---
+  await emitScaffold(
+    plan,
+    'urpc-runtime',
+    join(root, frontendRoot, 'lib/urpc/client.ts'),
+    await renderUrpcRuntime(),
+    force,
+    dryRun,
+  );
+
+  // --- URPC resource client (always regenerated; shared by both targets) ---
+  await emitRegen(
+    plan,
+    'urpc-resource',
+    join(root, frontendRoot, 'udo', `${resource}.urpc.ts`),
+    await renderUrpcResource(doc),
+    dryRun,
+  );
+
   if (target === 'react') {
     // --- React page scaffold (per-resource, scaffold-once) ---
     {
@@ -312,13 +332,20 @@ export async function planAndGenerate(
     );
   }
 
-  // --- Multi-resource manifest (regenerated from the output dir contents) ---
+  // --- Multi-resource manifests (regenerated from the output dir contents) ---
   {
     const udoDir = join(root, frontendRoot, 'udo');
+
     const manifestPath = join(udoDir, 'index.ts');
     const contents = buildManifest(udoDir);
     writeIfNeeded(manifestPath, contents, dryRun);
     plan.push({ artifact: 'manifest', kind: 'WRITE', path: manifestPath, contents });
+
+    // URPC client manifest — the single `urpc` object over all *.urpc.ts.
+    const urpcManifestPath = join(udoDir, 'urpc.ts');
+    const urpcContents = buildUrpcManifest(udoDir);
+    writeIfNeeded(urpcManifestPath, urpcContents, dryRun);
+    plan.push({ artifact: 'urpc-manifest', kind: 'WRITE', path: urpcManifestPath, contents: urpcContents });
   }
 
   // --- Routes injection (idempotent, opt-out aware) ---
